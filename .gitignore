@@ -17,8 +17,9 @@ credentials.txt
 __pycache__/
 *.pyc
 
-# Large test files
-data/input/*_large.csv
+# Only ignore Very Large Files (1000+ Users)
+data/input/*_xlarge.csv
+data/input/massive_*.csv
 
 # Keep .gitkeep files
 !.gitkeep
