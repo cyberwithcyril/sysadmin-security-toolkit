@@ -25,7 +25,7 @@ sysadmin-toolkit/
 ## ✅ Progress
 
 - [x] Project setup and folder structure ✅
-- [ ] Data generator with Faker (next)
+- [ ] Data generator with Faker
 - [ ] User management scripts
 - [ ] Backup system
 - [ ] Service monitoring
@@ -39,7 +39,7 @@ sysadmin-toolkit/
 ## 👤 Author
 
 Cyril Thomas
-[Your University Name]
+[SUNY Albany]
 
 ## 📄 License
 
