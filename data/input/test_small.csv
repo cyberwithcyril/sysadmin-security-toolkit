@@ -1,0 +1,11 @@
+username,fullname,email,department,groups,account_expiry
+ahill,Allison Hill,ahill@techcorp.com,Operations,logistics;operations,2026-04-12
+byang,Brian Yang,byang@techcorp.com,Sales,sales,2026-12-18
+jjohnson,Javier Johnson,jjohnson@techcorp.com,Sales,business_dev;sales,2026-04-08
+lhoffman,Lance Hoffman,lhoffman@techcorp.com,Legal,legal,2027-04-30
+krobinson,Kimberly Robinson,krobinson@techcorp.com,Sales,business_dev;sales,2027-01-21
+sblake,Sean Blake,sblake@techcorp.com,Finance,finance,2026-02-22
+gmoore,Gina Moore,gmoore@techcorp.com,Finance,analysts;finance,2027-06-06
+bdavis,Brandon Davis,bdavis@techcorp.com,IT,developers,2027-08-10
+dwilliams,Dennis Williams,dwilliams@techcorp.com,HR,training,2026-10-12
+vgray,Valerie Gray,vgray@techcorp.com,Sales,sales,2026-12-23
