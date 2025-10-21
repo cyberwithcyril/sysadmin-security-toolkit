@@ -36,6 +36,12 @@ sysadmin-toolkit/
 - **Tools:** Git, Faker, ShellCheck, VirtualBox
 - **Platforms:** Linux (Ubuntu), Windows Server
 
+## 📖 Documentation
+
+- **[Data Generator Explanation](docs/data_generator_explained.md)** - Comprehensive breakdown of how the Faker script works
+- **[Learning Notes](docs/my_learning_notes.md)** - Development journal and key concepts learned
+- **[Installation Guide](docs/installation.md)** - Coming soon
+- **[User Guide](docs/user_guide.md)** - Coming soon
 ## 👤 Author
 
 Cyril Thomas
