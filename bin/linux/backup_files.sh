@@ -1,175 +1,258 @@
 #!/bin/bash
 ################################################################################
 # Script Name: backup_files.sh
-# Description: Automated file backup with rotation and compression
+# Description: Automated file backup with compression and rotation
 # Author: Cyril Thomas
-# Date: October 21, 2025
-# Version: 0.1 (skeleton)
-#
-# OS Concepts Demonstrated:
-# - File system operations and I/O
-# - Process scheduling and automation
-# - Data compression and archiving
-#
-# Features:
-# - Configurable backup paths
-# - Automatic compression (tar.gz)
-# - Rotation policy (keep last N backups)
-# - Audit logging
+# Date: November 4, 2025
+# Version: 1.0
 ################################################################################
+
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../lib/common.sh"
 
 # Configuration
 BACKUP_SOURCE="/home"
 BACKUP_DEST="/backup"
 RETENTION_DAYS=7
-AUDIT_LOG="/var/log/sysadmin-toolkit/audit.log"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-################################################################################
-# Function: log_action
-# Purpose: Write audit trail entry
-################################################################################
-log_action() {
-    local action="$1"
-    local result="$2"
-    local details="$3"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    echo "[$timestamp] ACTION:$action RESULT:$result DETAILS:$details"
-    # TODO: Write to actual log file
-}
-
-################################################################################
-# Function: check_root
-# Purpose: Verify script is running with root privileges
-################################################################################
-check_root() {
-    if [ "$EUID" -ne 0 ]; then
-        echo -e "${RED}ERROR: This script must be run as root${NC}"
-        echo "Usage: sudo $0"
-        exit 1
-    fi
-    echo -e "${GREEN}✓${NC} Running with root privileges"
-}
 
 ################################################################################
 # Function: validate_paths
-# Purpose: Ensure source and destination paths exist
 ################################################################################
 validate_paths() {
-    echo -e "${BLUE}Validating backup paths...${NC}"
+    print_info "Validating backup paths..."
     
     # Check source exists
     if [ ! -d "$BACKUP_SOURCE" ]; then
-        echo -e "${RED}ERROR: Source directory does not exist: $BACKUP_SOURCE${NC}"
+        print_error "Source directory does not exist: $BACKUP_SOURCE"
         return 1
     fi
-    echo -e "${GREEN}✓${NC} Source path valid: $BACKUP_SOURCE"
+    print_success "Source path valid: $BACKUP_SOURCE"
     
-    # Check destination exists (create if not)
+    # Create destination if needed
     if [ ! -d "$BACKUP_DEST" ]; then
-        echo -e "${YELLOW}⚠${NC}  Destination does not exist: $BACKUP_DEST"
-        echo "   (Would create in production)"
+        mkdir -p "$BACKUP_DEST"
+        chmod 755 "$BACKUP_DEST"
+        print_success "Created destination: $BACKUP_DEST"
     else
-        echo -e "${GREEN}✓${NC} Destination path valid: $BACKUP_DEST"
+        print_success "Destination path valid: $BACKUP_DEST"
     fi
     
     return 0
 }
 
 ################################################################################
-# Function: calculate_backup_size
-# Purpose: Estimate size of backup
+# Function: calculate_size
 ################################################################################
-calculate_backup_size() {
-    local source="$1"
-    echo -e "${BLUE}Calculating backup size...${NC}"
+calculate_size() {
+    local path="$1"
+    local size=$(du -sh "$path" 2>/dev/null | cut -f1)
+    echo "$size"
+}
+
+################################################################################
+# Function: check_disk_space
+################################################################################
+check_disk_space() {
+    print_info "Checking available disk space..."
     
-    # Simulate size calculation
-    echo -e "${GREEN}✓${NC} Estimated size: ~500MB (simulated)"
-    # TODO: Implement actual du -sh command
+    local available=$(df -h "$BACKUP_DEST" | awk 'NR==2 {print $4}')
+    local used=$(df -h "$BACKUP_DEST" | awk 'NR==2 {print $3}')
+    
+    print_success "Available space: $available"
+    print_success "Used space: $used"
+    
+    return 0
+}
+
+################################################################################
+# Function: create_backup
+################################################################################
+create_backup() {
+    local source="$1"
+    local dest="$2"
+    local timestamp=$(date '+%Y%m%d_%H%M%S')
+    local backup_name="backup_$(basename $source)_${timestamp}.tar.gz"
+    local backup_path="${dest}/${backup_name}"
+    
+    print_info "Creating backup: $backup_name"
+    
+    # Get source size
+    local source_size=$(calculate_size "$source")
+    print_info "Source size: $source_size"
+    
+    # Create compressed backup
+    if tar -czf "$backup_path" -C "$(dirname $source)" "$(basename $source)" 2>/dev/null; then
+        print_success "Backup created successfully"
+        
+        # Get backup size
+        local backup_size=$(calculate_size "$backup_path")
+        print_success "Backup size: $backup_size"
+        print_success "Saved to: $backup_path"
+        
+        # Calculate compression ratio
+        log_action "BACKUP_CREATE" "SUCCESS" "source=$source size=$backup_size file=$backup_name"
+        
+        return 0
+    else
+        print_error "Failed to create backup"
+        log_action "BACKUP_CREATE" "FAILURE" "source=$source"
+        return 1
+    fi
+}
+
+################################################################################
+# Function: rotate_backups
+################################################################################
+rotate_backups() {
+    local dest="$1"
+    local retention="$2"
+    
+    print_info "Rotating old backups (keeping last $retention days)..."
+    
+    # Find and delete old backups
+    local deleted_count=0
+    
+    while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            rm -f "$file"
+            print_success "Deleted: $(basename $file)"
+            ((deleted_count++))
+        fi
+    done < <(find "$dest" -name "backup_*.tar.gz" -type f -mtime +$retention)
+    
+    if [ $deleted_count -eq 0 ]; then
+        print_info "No old backups to delete"
+    else
+        print_success "Deleted $deleted_count old backup(s)"
+        log_action "BACKUP_ROTATE" "SUCCESS" "deleted=$deleted_count retention=${retention}d"
+    fi
+    
+    return 0
+}
+
+################################################################################
+# Function: list_backups
+################################################################################
+list_backups() {
+    local dest="$1"
+    
+    print_info "Current backups in $dest:"
+    echo ""
+    
+    if [ ! -d "$dest" ] || [ -z "$(ls -A $dest)" ]; then
+        echo "  No backups found"
+        return 0
+    fi
+    
+    ls -lh "$dest"/backup_*.tar.gz 2>/dev/null | awk '{print "  " $9 " - " $5 " - " $6 " " $7 " " $8}' || echo "  No backups found"
+    echo ""
+    
+    return 0
 }
 
 ################################################################################
 # Function: show_usage
-# Purpose: Display help information
 ################################################################################
 show_usage() {
     cat << USAGE
 Usage: $0 [OPTIONS]
 
-Automated backup script with compression and rotation.
-
 Options:
-    --source, -s PATH          Source directory to backup (default: /home)
-    --dest, -d PATH            Backup destination (default: /backup)
-    --retention, -r DAYS       Days to keep backups (default: 7)
-    --help, -h                 Show this help message
+    -s, --source PATH       Source directory to backup (default: /home)
+    -d, --dest PATH         Backup destination (default: /backup)
+    -r, --retention DAYS    Days to keep backups (default: 7)
+    -l, --list              List existing backups
+    -h, --help              Show this help
 
 Examples:
-    $0 --source /var/www --dest /backup/www
-    $0 -s /home -d /mnt/backups -r 14
-
-Note: This is currently a skeleton script for testing.
-      Actual backup functionality will be implemented later.
+    $0                                          # Backup /home to /backup
+    $0 -s /var/www -d /backup/www              # Backup custom path
+    $0 -r 14                                    # Keep backups for 14 days
+    $0 -l                                       # List existing backups
 
 USAGE
 }
 
 ################################################################################
-# Main Script Execution
+# Main
 ################################################################################
 
-echo "========================================="
-echo " Backup Script (Skeleton v0.1)"
-echo "========================================="
-echo ""
+print_header "Backup Script v1.0"
 
+# Parse arguments
+LIST_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -s|--source)
+            BACKUP_SOURCE="$2"
+            shift 2
+            ;;
+        -d|--dest)
+            BACKUP_DEST="$2"
+            shift 2
+            ;;
+        -r|--retention)
+            RETENTION_DAYS="$2"
+            shift 2
+            ;;
+        -l|--list)
+            LIST_ONLY=true
+            shift
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
+check_root
+
+# Configuration summary
 echo "Configuration:"
 echo "  Source: $BACKUP_SOURCE"
 echo "  Destination: $BACKUP_DEST"
 echo "  Retention: $RETENTION_DAYS days"
 echo ""
 
-# Test functions
-echo "Testing script functions..."
-echo ""
-
-echo "1. Testing privilege check..."
-check_root
-
-echo ""
-
-echo "2. Testing path validation..."
-if validate_paths; then
-    echo "   Path validation passed!"
-else
-    echo "   Path validation failed"
+# List only mode
+if [ "$LIST_ONLY" = true ]; then
+    list_backups "$BACKUP_DEST"
+    exit 0
 fi
 
+# Validate paths
+if ! validate_paths; then
+    exit 1
+fi
+
+# Check disk space
+check_disk_space
+
 echo ""
 
-echo "3. Testing size calculation..."
-calculate_backup_size "$BACKUP_SOURCE"
-
-echo ""
-echo "========================================="
-echo " Script Skeleton Test Complete!"
-echo "========================================="
-echo ""
-echo "Next steps:"
-echo "  - Implement actual tar compression"
-echo "  - Add backup rotation logic"
-echo "  - Enable scheduled execution (cron)"
-echo "  - Add email notifications"
-echo ""
-
-log_action "BACKUP_TEST" "SUCCESS" "source=$BACKUP_SOURCE dest=$BACKUP_DEST"
-
-exit 0
+# Create backup
+if create_backup "$BACKUP_SOURCE" "$BACKUP_DEST"; then
+    echo ""
+    
+    # Rotate old backups
+    rotate_backups "$BACKUP_DEST" "$RETENTION_DAYS"
+    
+    echo ""
+    
+    # Show current backups
+    list_backups "$BACKUP_DEST"
+    
+    print_success "Backup completed successfully!"
+    exit 0
+else
+    print_error "Backup failed!"
+    exit 1
+fi
