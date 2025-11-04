@@ -3,160 +3,181 @@
 # Script Name: create_user.sh
 # Description: Creates user accounts with security policies
 # Author: Cyril Thomas
-# Date: October 21, 2025
-# Version: 0.1 (skeleton)
-#
-# OS Concepts Demonstrated:
-# - User/Group management (multi-user systems)
-# - File system permissions and ownership
-# - Process ownership and security contexts
-#
-# Security Features:
-# - Input validation
-# - Audit logging
-# - Privilege validation
+# Date: November 4, 2025
+# Version: 1.0
 ################################################################################
 
-# Configuration
-AUDIT_LOG="/var/log/sysadmin-toolkit/audit.log"
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-################################################################################
-# Function: log_action
-# Purpose: Write audit trail entry
-################################################################################
-log_action() {
-    local action="$1"
-    local result="$2"
-    local details="$3"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    echo "[$timestamp] ACTION:$action RESULT:$result DETAILS:$details"
-    # TODO: Write to actual log file
-}
-
-################################################################################
-# Function: check_root
-# Purpose: Verify script is running with root privileges
-################################################################################
-check_root() {
-    if [ "$EUID" -ne 0 ]; then
-        echo -e "${RED}ERROR: This script must be run as root${NC}"
-        echo "Usage: sudo $0"
-        exit 1
-    fi
-    echo -e "${GREEN}✓${NC} Running with root privileges"
-}
+# Source shared library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../../lib/common.sh"
 
 ################################################################################
 # Function: validate_username
-# Purpose: Ensure username meets requirements
 ################################################################################
 validate_username() {
     local username="$1"
     
-    # Check if username provided
     if [ -z "$username" ]; then
-        echo -e "${RED}ERROR: Username is required${NC}"
+        print_error "Username is required"
         return 1
     fi
     
-    # Check length (3-32 characters)
     if [ ${#username} -lt 3 ] || [ ${#username} -gt 32 ]; then
-        echo -e "${RED}ERROR: Username must be 3-32 characters${NC}"
+        print_error "Username must be 3-32 characters"
         return 1
     fi
     
-    # Check format (lowercase alphanumeric, underscore, hyphen)
-    if [[ ! "$username" =~ ^[a-z][a-z0-9_-]*$ ]]; then
-        echo -e "${RED}ERROR: Username must start with lowercase letter${NC}"
-        echo "       and contain only lowercase letters, numbers, underscore, or hyphen"
+    if [[ ! "$username" =~ ^[a-z][a-z0-9_.-]*$ ]]; then
+        print_error "Username must start with lowercase letter"
         return 1
     fi
     
-    # Check if username already exists
     if id "$username" &>/dev/null; then
-        echo -e "${RED}ERROR: Username '$username' already exists${NC}"
+        print_error "Username '$username' already exists"
         return 1
     fi
     
-    echo -e "${GREEN}✓${NC} Username validation passed"
+    print_success "Username validation passed"
+    return 0
+}
+
+################################################################################
+# Function: create_user_account
+################################################################################
+create_user_account() {
+    local username="$1"
+    local fullname="$2"
+    local groups="$3"
+    
+    echo ""
+    print_info "Creating user account: $username"
+    echo "----------------------------------------"
+    
+    # Create user
+    if useradd "$username" --create-home --shell /bin/bash --comment "$fullname" 2>/dev/null; then
+        print_success "User account created"
+    else
+        print_error "Failed to create user"
+        log_action "USER_CREATE" "FAILURE" "username=$username"
+        return 1
+    fi
+    
+    # Set permissions
+    chmod 750 /home/"$username"
+    chown "$username":"$username" /home/"$username"
+    print_success "Home directory secured (750)"
+    
+    # Generate password
+    local temp_password=$(openssl rand -base64 12)
+    echo "$username:$temp_password" | chpasswd
+    print_success "Temporary password set"
+    
+    # Password policies
+    chage -d 0 "$username"
+    print_success "Password change required on first login"
+    
+    chage -M 90 "$username"
+    print_success "Password expires in 90 days"
+    
+    local expire_date=$(date -d "+1 year" +%Y-%m-%d)
+    chage -E "$expire_date" "$username"
+    print_success "Account expires: $expire_date"
+    
+    # Add to groups
+    if [ -n "$groups" ]; then
+        IFS=',' read -ra GROUP_ARRAY <<< "$groups"
+        for group in "${GROUP_ARRAY[@]}"; do
+            if ! getent group "$group" >/dev/null 2>&1; then
+                groupadd "$group"
+                print_success "Created group: $group"
+            fi
+            usermod -aG "$group" "$username"
+            print_success "Added to group: $group"
+        done
+    fi
+    
+    log_action "USER_CREATE" "SUCCESS" "username=$username fullname='$fullname'"
+    
+    echo ""
+    echo -e "${GREEN}User created successfully!${NC}"
+    echo "Username: $username"
+    echo "Temporary Password: $temp_password"
+    echo "Account expires: $expire_date"
+    echo ""
+    
     return 0
 }
 
 ################################################################################
 # Function: show_usage
-# Purpose: Display help information
 ################################################################################
 show_usage() {
     cat << USAGE
 Usage: $0 [OPTIONS]
 
-Create user accounts with security policies.
-
 Options:
-    --username, -u USERNAME    Username for new account (required)
-    --fullname, -f "NAME"      Full name of user (optional)
-    --groups, -g GROUPS        Comma-separated list of groups (optional)
-    --help, -h                 Show this help message
+    -u, --username USERNAME    Username (required)
+    -f, --fullname "NAME"      Full name (required)
+    -g, --groups GROUPS        Groups (optional)
+    -h, --help                 Help
 
 Examples:
-    $0 --username jdoe --fullname "John Doe"
-    $0 -u jsmith -f "Jane Smith" -g developers,sysadmins
-
-Note: This is currently a skeleton script for testing.
-      Actual user creation will be implemented in Day 4.
+    $0 -u jdoe -f "John Doe"
+    $0 -u jsmith -f "Jane Smith" -g developers,sudo
 
 USAGE
 }
 
 ################################################################################
-# Main Script Execution
+# Main
 ################################################################################
 
-echo "========================================="
-echo " User Creation Script (Skeleton v0.1)"
-echo "========================================="
-echo ""
+print_header "User Creation Script v1.0"
 
-# Test mode - just verify functions work
-USERNAME="testuser001"
-FULLNAME="Test User 001"
+USERNAME=""
+FULLNAME=""
+GROUPS=""
 
-echo "Testing script functions with: $USERNAME"
-echo ""
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -u|--username)
+            USERNAME="$2"
+            shift 2
+            ;;
+        -f|--fullname)
+            FULLNAME="$2"
+            shift 2
+            ;;
+        -g|--groups)
+            GROUPS="$2"
+            shift 2
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+    esac
+done
 
-# Test privilege check
-echo "1. Testing privilege check..."
 check_root
 
-echo ""
-
-# Test username validation
-echo "2. Testing username validation..."
-if validate_username "$USERNAME"; then
-    echo "   Username '$USERNAME' is valid!"
-else
-    echo "   Username validation failed"
+if [ -z "$USERNAME" ] || [ -z "$FULLNAME" ]; then
+    print_error "Username and fullname required"
+    show_usage
+    exit 1
 fi
 
-echo ""
-echo "========================================="
-echo " Script Skeleton Test Complete!"
-echo "========================================="
-echo ""
-echo "Next steps (Day 4):"
-echo "  - Add actual useradd functionality"
-echo "  - Implement group management"
-echo "  - Add password policy enforcement"
-echo "  - Enable audit logging to file"
-echo ""
+if ! validate_username "$USERNAME"; then
+    exit 1
+fi
 
-log_action "SKELETON_TEST" "SUCCESS" "username=$USERNAME fullname='$FULLNAME'"
-
-exit 0
+if create_user_account "$USERNAME" "$FULLNAME" "$GROUPS"; then
+    exit 0
+else
+    exit 1
+fi
