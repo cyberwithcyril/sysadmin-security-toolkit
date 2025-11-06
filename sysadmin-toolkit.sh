@@ -1,13 +1,13 @@
 #!/bin/bash
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Script Name: sysadmin-toolkit.sh
-# Description: Universal launcher for SysAdmin Toolkit (Linux & Windows)
+# Description: Launcher for SysAdmin Toolkit (Linux & Windows)
 # Author: Cyril Thomas
 # Date: November 5, 2025
 # Version: 1.0
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# Colors
+# Colors [Adds Color to Text Output in Terminal]
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -16,14 +16,15 @@ CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
-# Configuration
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Configuration 
+#Defines where the script is coming from - then Defines subfolder paths for Linux/Windows
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 
 LINUX_BIN="$SCRIPT_DIR/bin/linux"
 WINDOWS_BIN="$SCRIPT_DIR/bin/windows"
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: detect_os
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 detect_os() {
     case "$(uname -s)" in
         Linux*)     OS_TYPE="Linux";;
@@ -33,15 +34,16 @@ detect_os() {
     esac
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: show_banner
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Run Screen Banner/Displays Detected OS
 show_banner() {
     clear
     echo -e "${CYAN}"
     echo "╔════════════════════════════════════════════════════════════════╗"
     echo "║                                                                ║"
-    echo "║           SYSADMIN TOOLKIT - UNIVERSAL EDITION                 ║"
+    echo "║          CTRL_OPS - SYSADMIN TOOLKIT                           ║"
     echo "║                     Version 1.0                                ║"
     echo "║                                                                ║"
     echo "║              Created by: Cyril Thomas                          ║"
@@ -65,9 +67,11 @@ show_banner() {
     fi
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: show_menu
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Menu Based On OS - Color Coded - Green if Linux & Blue if Windows - Red if Unsupported
+#If/Else Condiiton -
 show_menu() {
     echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
     
@@ -77,8 +81,8 @@ show_menu() {
         echo -e "  ${GREEN}1.${NC} User Management        - Create and manage user accounts"
         echo -e "  ${GREEN}2.${NC} Backup Automation      - Backup files with compression"
         echo -e "  ${GREEN}3.${NC} Log Rotation           - Manage and rotate system logs"
-        echo -e "  ${GREEN}4.${NC} System Monitoring      - Monitor CPU, memory, disk usage"
-        echo -e "  ${GREEN}5.${NC} Service Management     - Start, stop, restart services"
+        echo -e "  ${GREEN}4.${NC} System Monitoring      - Monitor CPU, Memory, Disk Usage"
+        echo -e "  ${GREEN}5.${NC} Service Management     - Start, Stop, Restart Services"
         echo ""
         echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
         echo -e "${MAGENTA}WINDOWS TOOLS: ${RED}(Not available on Linux)${NC}"
@@ -108,18 +112,18 @@ show_menu() {
     echo ""
     echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
     echo ""
-    echo -e "${CYAN}  6.${NC} View Documentation"
-    echo -e "${CYAN}  7.${NC} About"
+    echo -e "${CYAN}  6.${NC} About"
     echo ""
     echo -e "${RED}  0.${NC} Exit"
     echo ""
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: run_linux_tool
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 run_linux_tool() {
-    local tool="$1"
+    local tool="$1" #[User Management, Backup Automation, Log Rotation, System Monitoring,
+    #Service Management]
     
     if [ "$OS_TYPE" != "Linux" ]; then
         echo -e "${RED}ERROR: This tool can only run on Linux!${NC}"
@@ -138,11 +142,12 @@ run_linux_tool() {
     esac
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: run_windows_tool
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 run_windows_tool() {
-    local tool="$1"
+    local tool="$1" #[User Management, Backup Automation, Event Log Management, System
+    #Monitoring, Service Management]
     
     if [ "$OS_TYPE" != "Windows" ]; then
         echo -e "${RED}ERROR: This tool can only run on Windows!${NC}"
@@ -161,9 +166,9 @@ run_windows_tool() {
     esac
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Linux Tool Functions
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 run_linux_user_management() {
     clear
@@ -253,9 +258,9 @@ run_linux_service_management() {
     read -p "Press Enter..."
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Windows Tool Functions
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 run_windows_user_management() {
     clear
@@ -312,42 +317,7 @@ run_windows_service_management() {
     read -p "Press Enter..."
 }
 
-################################################################################
-# Documentation Functions
-################################################################################
 
-show_documentation() {
-    clear
-    echo -e "${CYAN}═══════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Toolkit Documentation${NC}"
-    echo -e "${CYAN}═══════════════════════════════════════${NC}"
-    echo ""
-    echo "SYSADMIN TOOLKIT - Universal Edition"
-    echo ""
-    echo "This cross-platform toolkit provides 10 automation scripts:"
-    echo ""
-    echo "LINUX TOOLS (5):"
-    echo "  1. User Management - Create users, bulk CSV import"
-    echo "  2. Backup Automation - tar.gz backups with rotation"
-    echo "  3. Log Rotation - Compress and clean old logs"
-    echo "  4. System Monitoring - CPU, memory, disk alerts"
-    echo "  5. Service Management - systemctl wrapper"
-    echo ""
-    echo "WINDOWS TOOLS (5):"
-    echo "  1. User Management - Local accounts, bulk CSV import"
-    echo "  2. Backup Automation - ZIP backups with rotation"
-    echo "  3. Event Log Management - Archive and clear logs"
-    echo "  4. System Monitoring - Performance counters, alerts"
-    echo "  5. Service Management - Windows services control"
-    echo ""
-    echo "CROSS-PLATFORM FEATURES:"
-    echo "  ✓ Automatic OS detection"
-    echo "  ✓ Unified interface"
-    echo "  ✓ Comprehensive audit logging"
-    echo "  ✓ Smart script launching"
-    echo ""
-    read -p "Press Enter..."
-}
 
 show_about() {
     clear
@@ -360,13 +330,11 @@ show_about() {
     echo "Created: November 2025"
     echo "Author: Cyril Thomas"
     echo ""
-    echo "A comprehensive cross-platform system administration"
-    echo "automation toolkit with 10 production-ready scripts."
+    echo "Cross-platform system administration automation toolkit "
     echo ""
     echo "Technology Stack:"
-    echo "  • Bash (5 Linux scripts + launcher)"
-    echo "  • PowerShell (5 Windows scripts)"
-    echo "  • Cross-platform design"
+    echo "  • Bash "
+    echo "  • PowerShell"
     echo ""
     echo "Platforms Supported:"
     echo "  • Linux (Ubuntu, CentOS, etc.)"
@@ -376,9 +344,9 @@ show_about() {
     read -p "Press Enter..."
 }
 
-################################################################################
-# Main Loop
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Main Loop - CORE
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # Detect OS
 detect_os
@@ -406,9 +374,6 @@ while true; do
             fi
             ;;
         6)
-            show_documentation
-            ;;
-        7)
             show_about
             ;;
         0)
