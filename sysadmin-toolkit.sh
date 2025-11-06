@@ -1,0 +1,425 @@
+#!/bin/bash
+################################################################################
+# Script Name: sysadmin-toolkit.sh
+# Description: Universal launcher for SysAdmin Toolkit (Linux & Windows)
+# Author: Cyril Thomas
+# Date: November 5, 2025
+# Version: 1.0
+################################################################################
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+NC='\033[0m' # No Color
+
+# Configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LINUX_BIN="$SCRIPT_DIR/bin/linux"
+WINDOWS_BIN="$SCRIPT_DIR/bin/windows"
+
+################################################################################
+# Function: detect_os
+################################################################################
+detect_os() {
+    case "$(uname -s)" in
+        Linux*)     OS_TYPE="Linux";;
+        MINGW*|MSYS*|CYGWIN*)    OS_TYPE="Windows";;
+        Darwin*)    OS_TYPE="Mac";;
+        *)          OS_TYPE="Unknown";;
+    esac
+}
+
+################################################################################
+# Function: show_banner
+################################################################################
+show_banner() {
+    clear
+    echo -e "${CYAN}"
+    echo "╔════════════════════════════════════════════════════════════════╗"
+    echo "║                                                                ║"
+    echo "║           SYSADMIN TOOLKIT - UNIVERSAL EDITION                 ║"
+    echo "║                     Version 1.0                                ║"
+    echo "║                                                                ║"
+    echo "║              Created by: Cyril Thomas                          ║"
+    echo "║              Date: November 2025                               ║"
+    echo "║                                                                ║"
+    echo "╚════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    
+    # Show detected OS
+    if [ "$OS_TYPE" == "Linux" ]; then
+        echo -e "${GREEN}✓ Detected OS: Linux${NC}"
+        echo -e "${GREEN}  All Linux tools available${NC}"
+        echo ""
+    elif [ "$OS_TYPE" == "Windows" ]; then
+        echo -e "${BLUE}✓ Detected OS: Windows (Git Bash)${NC}"
+        echo -e "${BLUE}  All Windows tools available${NC}"
+        echo ""
+    else
+        echo -e "${RED}⚠ Detected OS: $OS_TYPE (Unsupported)${NC}"
+        echo ""
+    fi
+}
+
+################################################################################
+# Function: show_menu
+################################################################################
+show_menu() {
+    echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
+    
+    if [ "$OS_TYPE" == "Linux" ]; then
+        echo -e "${GREEN}LINUX TOOLS:${NC}"
+        echo ""
+        echo -e "  ${GREEN}1.${NC} User Management        - Create and manage user accounts"
+        echo -e "  ${GREEN}2.${NC} Backup Automation      - Backup files with compression"
+        echo -e "  ${GREEN}3.${NC} Log Rotation           - Manage and rotate system logs"
+        echo -e "  ${GREEN}4.${NC} System Monitoring      - Monitor CPU, memory, disk usage"
+        echo -e "  ${GREEN}5.${NC} Service Management     - Start, stop, restart services"
+        echo ""
+        echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
+        echo -e "${MAGENTA}WINDOWS TOOLS: ${RED}(Not available on Linux)${NC}"
+        echo ""
+        echo -e "  ${RED}⚠${NC}  Windows tools require Windows OS or Git Bash on Windows"
+        
+    elif [ "$OS_TYPE" == "Windows" ]; then
+        echo -e "${BLUE}WINDOWS TOOLS:${NC}"
+        echo ""
+        echo -e "  ${BLUE}1.${NC} User Management        - Create and manage user accounts"
+        echo -e "  ${BLUE}2.${NC} Backup Automation      - Backup files with compression"
+        echo -e "  ${BLUE}3.${NC} Event Log Management   - Archive and manage event logs"
+        echo -e "  ${BLUE}4.${NC} System Monitoring      - Monitor CPU, memory, disk usage"
+        echo -e "  ${BLUE}5.${NC} Service Management     - Start, stop, restart services"
+        echo ""
+        echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
+        echo -e "${MAGENTA}LINUX TOOLS: ${RED}(Not available on Windows)${NC}"
+        echo ""
+        echo -e "  ${RED}⚠${NC}  Linux tools require Linux OS"
+        
+    else
+        echo -e "${RED}ERROR: Unsupported operating system${NC}"
+        echo -e "This toolkit requires Linux or Windows (with Git Bash)"
+        return
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo -e "${CYAN}  6.${NC} View Documentation"
+    echo -e "${CYAN}  7.${NC} About"
+    echo ""
+    echo -e "${RED}  0.${NC} Exit"
+    echo ""
+}
+
+################################################################################
+# Function: run_linux_tool
+################################################################################
+run_linux_tool() {
+    local tool="$1"
+    
+    if [ "$OS_TYPE" != "Linux" ]; then
+        echo -e "${RED}ERROR: This tool can only run on Linux!${NC}"
+        echo -e "${YELLOW}Current OS: $OS_TYPE${NC}"
+        echo ""
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    case "$tool" in
+        1) run_linux_user_management ;;
+        2) run_linux_backup ;;
+        3) run_linux_log_rotation ;;
+        4) run_linux_monitoring ;;
+        5) run_linux_service_management ;;
+    esac
+}
+
+################################################################################
+# Function: run_windows_tool
+################################################################################
+run_windows_tool() {
+    local tool="$1"
+    
+    if [ "$OS_TYPE" != "Windows" ]; then
+        echo -e "${RED}ERROR: This tool can only run on Windows!${NC}"
+        echo -e "${YELLOW}Current OS: $OS_TYPE${NC}"
+        echo ""
+        read -p "Press Enter to continue..."
+        return
+    fi
+    
+    case "$tool" in
+        1) run_windows_user_management ;;
+        2) run_windows_backup ;;
+        3) run_windows_eventlog ;;
+        4) run_windows_monitoring ;;
+        5) run_windows_service_management ;;
+    esac
+}
+
+################################################################################
+# Linux Tool Functions
+################################################################################
+
+run_linux_user_management() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Linux User Management${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "1. Create single user"
+    echo "2. Bulk create from CSV"
+    echo "3. Back to main menu"
+    echo ""
+    read -p "Select: " choice
+    
+    case $choice in
+        1)
+            read -p "Username: " user
+            read -p "Full name: " name
+            sudo "$LINUX_BIN/create_user.sh" -u "$user" -f "$name"
+            ;;
+        2)
+            read -p "CSV path: " csv
+            sudo "$LINUX_BIN/create_users_from_csv.sh" "$csv"
+            ;;
+        3) return ;;
+    esac
+    read -p "Press Enter..."
+}
+
+run_linux_backup() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Linux Backup Automation${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    sudo "$LINUX_BIN/backup_files.sh"
+    echo ""
+    read -p "Press Enter..."
+}
+
+run_linux_log_rotation() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Linux Log Rotation${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    sudo "$LINUX_BIN/rotate_logs.sh"
+    echo ""
+    read -p "Press Enter..."
+}
+
+run_linux_monitoring() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Linux System Monitoring${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    sudo "$LINUX_BIN/monitor_system.sh"
+    echo ""
+    read -p "Press Enter..."
+}
+
+run_linux_service_management() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Linux Service Management${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "1. List services"
+    echo "2. Check status"
+    echo "3. Restart service"
+    echo "4. Back"
+    echo ""
+    read -p "Select: " choice
+    
+    case $choice in
+        1) sudo "$LINUX_BIN/manage_service.sh" list ;;
+        2)
+            read -p "Service name: " svc
+            sudo "$LINUX_BIN/manage_service.sh" status "$svc"
+            ;;
+        3)
+            read -p "Service name: " svc
+            sudo "$LINUX_BIN/manage_service.sh" restart "$svc"
+            ;;
+        4) return ;;
+    esac
+    read -p "Press Enter..."
+}
+
+################################################################################
+# Windows Tool Functions
+################################################################################
+
+run_windows_user_management() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Windows User Management${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "Launching PowerShell script..."
+    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/New-BulkUsers.ps1"
+    read -p "Press Enter..."
+}
+
+run_windows_backup() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Windows Backup Automation${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "Launching PowerShell script..."
+    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Backup-Files.ps1"
+    read -p "Press Enter..."
+}
+
+run_windows_eventlog() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Windows Event Log Management${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "Launching PowerShell script..."
+    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Manage-EventLogs.ps1"
+    read -p "Press Enter..."
+}
+
+run_windows_monitoring() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Windows System Monitoring${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "Launching PowerShell script..."
+    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Monitor-System.ps1"
+    read -p "Press Enter..."
+}
+
+run_windows_service_management() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Windows Service Management${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "Launching PowerShell script..."
+    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Manage-Service.ps1"
+    read -p "Press Enter..."
+}
+
+################################################################################
+# Documentation Functions
+################################################################################
+
+show_documentation() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  Toolkit Documentation${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "SYSADMIN TOOLKIT - Universal Edition"
+    echo ""
+    echo "This cross-platform toolkit provides 10 automation scripts:"
+    echo ""
+    echo "LINUX TOOLS (5):"
+    echo "  1. User Management - Create users, bulk CSV import"
+    echo "  2. Backup Automation - tar.gz backups with rotation"
+    echo "  3. Log Rotation - Compress and clean old logs"
+    echo "  4. System Monitoring - CPU, memory, disk alerts"
+    echo "  5. Service Management - systemctl wrapper"
+    echo ""
+    echo "WINDOWS TOOLS (5):"
+    echo "  1. User Management - Local accounts, bulk CSV import"
+    echo "  2. Backup Automation - ZIP backups with rotation"
+    echo "  3. Event Log Management - Archive and clear logs"
+    echo "  4. System Monitoring - Performance counters, alerts"
+    echo "  5. Service Management - Windows services control"
+    echo ""
+    echo "CROSS-PLATFORM FEATURES:"
+    echo "  ✓ Automatic OS detection"
+    echo "  ✓ Unified interface"
+    echo "  ✓ Comprehensive audit logging"
+    echo "  ✓ Smart script launching"
+    echo ""
+    read -p "Press Enter..."
+}
+
+show_about() {
+    clear
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo -e "${CYAN}  About SysAdmin Toolkit${NC}"
+    echo -e "${CYAN}═══════════════════════════════════════${NC}"
+    echo ""
+    echo "SysAdmin Toolkit - Universal Edition"
+    echo "Version: 1.0"
+    echo "Created: November 2025"
+    echo "Author: Cyril Thomas"
+    echo ""
+    echo "A comprehensive cross-platform system administration"
+    echo "automation toolkit with 10 production-ready scripts."
+    echo ""
+    echo "Technology Stack:"
+    echo "  • Bash (5 Linux scripts + launcher)"
+    echo "  • PowerShell (5 Windows scripts)"
+    echo "  • Cross-platform design"
+    echo ""
+    echo "Platforms Supported:"
+    echo "  • Linux (Ubuntu, CentOS, etc.)"
+    echo "  • Windows Server (2019, 2022)"
+    echo "  • Windows 10/11 (with Git Bash)"
+    echo ""
+    read -p "Press Enter..."
+}
+
+################################################################################
+# Main Loop
+################################################################################
+
+# Detect OS
+detect_os
+
+# Check Git Bash on Windows
+if [ "$OS_TYPE" == "Windows" ] && ! command -v powershell.exe &> /dev/null; then
+    echo -e "${RED}ERROR: PowerShell not found!${NC}"
+    echo "This toolkit requires PowerShell on Windows"
+    exit 1
+fi
+
+# Main menu loop
+while true; do
+    show_banner
+    show_menu
+    
+    read -p "Select an option: " choice
+    
+    case $choice in
+        1|2|3|4|5)
+            if [ "$OS_TYPE" == "Linux" ]; then
+                run_linux_tool "$choice"
+            elif [ "$OS_TYPE" == "Windows" ]; then
+                run_windows_tool "$choice"
+            fi
+            ;;
+        6)
+            show_documentation
+            ;;
+        7)
+            show_about
+            ;;
+        0)
+            clear
+            echo -e "${GREEN}Thank you for using SysAdmin Toolkit!${NC}"
+            echo ""
+            exit 0
+            ;;
+        *)
+            echo -e "${RED}Invalid option${NC}"
+            sleep 1
+            ;;
+    esac
+done
