@@ -10,11 +10,11 @@ import csv
 import random
 import argparse
 
-# Initialize Faker with seed for reproducibility
+# Initialize 
 fake = Faker()
-Faker.seed(42)  # Same seed = same data every time
+Faker.seed(42)  
 
-# Define realistic organizational structure
+# Sample Company 
 DEPARTMENTS = ['IT', 'Sales', 'Marketing', 'Finance', 'HR', 'Operations', 'Legal']
 
 GROUPS = {
