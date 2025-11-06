@@ -12,7 +12,7 @@ import csv
 import random
 from datetime import datetime
 
-# Initialize Faker
+# Initialize 
 fake = Faker()
 
 # Configuration
