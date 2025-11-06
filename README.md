@@ -29,7 +29,6 @@ The SysAdmin Toolkit is a professional-grade automation suite designed for syste
 - [Project Structure](#project-structure)
 - [Requirements](#requirements)
 - [Testing](#testing)
-- [Documentation](#documentation)
 - [Author](#author)
 
 ## 🚀 Quick Start
@@ -52,12 +51,8 @@ cd sysadmin-toolkit
 ## ✨ Features
 
 ### Universal Launcher
-- **Automatic OS Detection** - Detects Linux, Windows, or Mac
-- **Platform-Aware Menus** - Shows only available tools
-- **Error Prevention** - Warns when attempting cross-platform execution
-- **Unified Interface** - Consistent experience across platforms
 
-### Linux Tools (5 Scripts)
+### Linux Tools 
 
 #### 1. User Management (`create_user.sh`)
 - Create individual user accounts with security policies
@@ -66,7 +61,7 @@ cd sysadmin-toolkit
 - Group management and permissions
 - Password expiration policies (90 days)
 - Account expiration (1 year)
-- Comprehensive audit logging
+- Audit logging
 
 **Example:**
 ```bash
@@ -76,10 +71,9 @@ sudo ./bin/linux/create_user.sh -u jdoe -f "John Doe"
 #### 2. Backup Automation (`backup_files.sh`)
 - Compress directories to tar.gz archives
 - Timestamp-based naming (YYYYMMDD_HHMMSS)
-- Automatic rotation (7-day retention by default)
+- Automatic Rotation (7-day retention by default)
 - Disk space validation
 - 90%+ compression ratios
-- Multiple source/destination support
 
 **Example:**
 ```bash
@@ -91,7 +85,6 @@ sudo ./bin/linux/backup_files.sh -s /home -d /backup
 - Delete logs older than 30 days
 - Size-based rotation (>50MB threshold)
 - Statistics and reporting
-- Scan-only mode for safety
 
 **Example:**
 ```bash
@@ -103,9 +96,6 @@ sudo ./bin/linux/rotate_logs.sh
 - Memory usage tracking
 - Disk space alerts
 - Load average checking
-- Top process identification
-- Continuous monitoring mode
-- Alert logging
 
 **Example:**
 ```bash
@@ -117,14 +107,13 @@ sudo ./bin/linux/monitor_system.sh --cpu-threshold 80
 - Enable/disable services at boot
 - Check service status and dependencies
 - View service logs (journalctl integration)
-- Comprehensive error handling
 
 **Example:**
 ```bash
 sudo ./bin/linux/manage_service.sh restart nginx
 ```
 
-### Windows Tools (5 Scripts)
+### Windows Tools
 
 #### 1. User Management (`New-BulkUsers.ps1`)
 - Create local user accounts
@@ -170,7 +159,6 @@ New-LocalUserAccount -Username "jdoe" -FullName "John Doe"
 - Disk space alerts for all drives
 - Top 5 process identification
 - Alert logging
-- Continuous mode
 
 **Example:**
 ```powershell
@@ -232,7 +220,6 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 - Automatic OS detection
 - Menu-driven interface
 - Built-in help and documentation
-- Safe script execution
 
 ### Method 2: Direct Script Execution
 
@@ -278,7 +265,7 @@ sysadmin-toolkit/
 ## 🔧 Requirements
 
 ### Linux
-- Operating System: Ubuntu 20.04+, CentOS 8+, or equivalent
+- Operating System: Ubuntu 20.04+
 - Shell: Bash 4.0+
 - Utilities: tar, gzip, systemctl, useradd, df, top
 - Permissions: root/sudo access
@@ -304,18 +291,6 @@ sysadmin-toolkit/
 - ✅ Service management (start/stop/restart)
 - ✅ Cross-platform launcher functionality
 
-### Test Results
-- All 10 scripts: ✅ Working
-- Universal launcher: ✅ OS detection accurate
-- Audit logging: ✅ All actions logged
-- Error handling: ✅ Graceful failures
-
-## 📚 Documentation
-
-- **DEMO.md** - Detailed usage scenarios and walkthroughs
-- **Inline Comments** - All scripts thoroughly documented
-- **Help Functions** - Built into each script (`--help` flag)
-- **Audit Logs** - Complete action history
 
 ### Audit Logging
 
@@ -323,15 +298,6 @@ sysadmin-toolkit/
 **Windows:** `C:\Logs\SysAdminToolkit\audit.log`
 
 Format: `[YYYY-MM-DD HH:MM:SS] ACTION:action_name RESULT:status DETAILS:info`
-
-## 🎓 Educational Value
-
-This project demonstrates:
-- **Cross-platform scripting** (Bash + PowerShell)
-- **System administration best practices**
-- **Security implementation** (password policies, permissions)
-- **Automation principles** (DRY, modularity, error handling)
-- **Professional development** (version control, documentation, testing)
 
 ## 👤 Author
 
@@ -344,19 +310,3 @@ This project demonstrates:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
-
-- Built as a capstone project demonstrating system administration skills
-- Tested on VirtualBox VMs (Ubuntu 24.04 & Windows Server 2022)
-- Inspired by real-world sysadmin challenges
-
-## 📞 Support
-
-For issues, questions, or contributions:
-- Open an issue on GitHub
-- Submit a pull request
-- Contact: [your-email@example.com]
-
----
-
-**⭐ If you find this toolkit useful, please star the repository!**
