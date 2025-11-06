@@ -1,52 +1,362 @@
-# System Administration Automation Toolkit
+# SysAdmin Toolkit - Universal Edition
 
-Cross-platform system administration automation with security focus.
+> A comprehensive cross-platform system administration automation toolkit with 10 production-ready scripts unified under a single launcher.
 
-## 🎯 Project Overview
+![Version](https://img.shields.io/badge/version-1.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
 
-Automation scripts to reduce manual system administration work and human error.
+## 🎯 Overview
 
-**Course:** System Administration and Operating System Concepts  
-**Duration:** October - December 2025  
-**Status:** 🚧 In Development
+The SysAdmin Toolkit is a professional-grade automation suite designed for system administrators working in mixed Linux/Windows environments. It provides 10 essential tools accessible through a unified, cross-platform launcher.
+
+**Key Features:**
+- ✅ Universal bash launcher with automatic OS detection
+- ✅ 5 Linux automation scripts (Bash)
+- ✅ 5 Windows automation scripts (PowerShell)
+- ✅ Comprehensive audit logging
+- ✅ Menu-driven interface
+- ✅ Production-ready code
+
+## 📋 Table of Contents
+
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Linux Tools](#linux-tools)
+- [Windows Tools](#windows-tools)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Project Structure](#project-structure)
+- [Requirements](#requirements)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [Author](#author)
+
+## 🚀 Quick Start
+
+### On Linux:
+```bash
+git clone https://github.com/yourusername/sysadmin-toolkit.git
+cd sysadmin-toolkit
+chmod +x sysadmin-toolkit.sh
+sudo ./sysadmin-toolkit.sh
+```
+
+### On Windows (Git Bash):
+```bash
+git clone https://github.com/yourusername/sysadmin-toolkit.git
+cd sysadmin-toolkit
+./sysadmin-toolkit.sh
+```
+
+## ✨ Features
+
+### Universal Launcher
+- **Automatic OS Detection** - Detects Linux, Windows, or Mac
+- **Platform-Aware Menus** - Shows only available tools
+- **Error Prevention** - Warns when attempting cross-platform execution
+- **Unified Interface** - Consistent experience across platforms
+
+### Linux Tools (5 Scripts)
+
+#### 1. User Management (`create_user.sh`)
+- Create individual user accounts with security policies
+- Bulk import from CSV files
+- Automatic password generation (16-character secure passwords)
+- Group management and permissions
+- Password expiration policies (90 days)
+- Account expiration (1 year)
+- Comprehensive audit logging
+
+**Example:**
+```bash
+sudo ./bin/linux/create_user.sh -u jdoe -f "John Doe"
+```
+
+#### 2. Backup Automation (`backup_files.sh`)
+- Compress directories to tar.gz archives
+- Timestamp-based naming (YYYYMMDD_HHMMSS)
+- Automatic rotation (7-day retention by default)
+- Disk space validation
+- 90%+ compression ratios
+- Multiple source/destination support
+
+**Example:**
+```bash
+sudo ./bin/linux/backup_files.sh -s /home -d /backup
+```
+
+#### 3. Log Rotation (`rotate_logs.sh`)
+- Compress logs older than 7 days (gzip)
+- Delete logs older than 30 days
+- Size-based rotation (>50MB threshold)
+- Statistics and reporting
+- Scan-only mode for safety
+
+**Example:**
+```bash
+sudo ./bin/linux/rotate_logs.sh
+```
+
+#### 4. System Monitoring (`monitor_system.sh`)
+- CPU usage monitoring (configurable threshold)
+- Memory usage tracking
+- Disk space alerts
+- Load average checking
+- Top process identification
+- Continuous monitoring mode
+- Alert logging
+
+**Example:**
+```bash
+sudo ./bin/linux/monitor_system.sh --cpu-threshold 80
+```
+
+#### 5. Service Management (`manage_service.sh`)
+- Start/stop/restart any systemd service
+- Enable/disable services at boot
+- Check service status and dependencies
+- View service logs (journalctl integration)
+- Comprehensive error handling
+
+**Example:**
+```bash
+sudo ./bin/linux/manage_service.sh restart nginx
+```
+
+### Windows Tools (5 Scripts)
+
+#### 1. User Management (`New-BulkUsers.ps1`)
+- Create local user accounts
+- Bulk import from CSV files
+- Secure password generation
+- Group membership management
+- Password policies (change on first login)
+- Audit logging to C:\Logs
+
+**Example:**
+```powershell
+. .\bin\windows\New-BulkUsers.ps1
+New-LocalUserAccount -Username "jdoe" -FullName "John Doe"
+```
+
+#### 2. Backup Automation (`Backup-Files.ps1`)
+- ZIP compression for directories
+- Automatic rotation (7-day retention)
+- Timestamp-based naming
+- Disk space checking
+- 90%+ compression ratios
+
+**Example:**
+```powershell
+. .\bin\windows\Backup-Files.ps1
+```
+
+#### 3. Event Log Management (`Manage-EventLogs.ps1`)
+- Archive event logs to .evtx files
+- Clear logs safely (with archive)
+- Event summaries (errors, warnings, info)
+- Old archive cleanup (30-day retention)
+- Source identification
+
+**Example:**
+```powershell
+. .\bin\windows\Manage-EventLogs.ps1
+```
+
+#### 4. System Monitoring (`Monitor-System.ps1`)
+- CPU usage monitoring
+- Memory usage tracking (GB and %)
+- Disk space alerts for all drives
+- Top 5 process identification
+- Alert logging
+- Continuous mode
+
+**Example:**
+```powershell
+. .\bin\windows\Monitor-System.ps1
+```
+
+#### 5. Service Management (`Manage-Service.ps1`)
+- Start/stop/restart Windows services
+- Change startup type (Automatic/Manual/Disabled)
+- Service status and dependencies
+- Process ID and path information
+
+**Example:**
+```powershell
+. .\bin\windows\Manage-Service.ps1
+Restart-ServiceSafe -ServiceName "Spooler"
+```
+
+## 📦 Installation
+
+### Prerequisites
+
+**Linux:**
+- Ubuntu 20.04+ or equivalent
+- Bash 4.0+
+- Root/sudo access
+
+**Windows:**
+- Windows Server 2019+ or Windows 10/11
+- PowerShell 5.1+
+- Git Bash (for universal launcher)
+- Administrator privileges
+
+### Clone Repository
+```bash
+git clone https://github.com/yourusername/sysadmin-toolkit.git
+cd sysadmin-toolkit
+```
+
+### Make Scripts Executable (Linux)
+```bash
+chmod +x sysadmin-toolkit.sh
+chmod +x bin/linux/*.sh
+```
+
+### Set PowerShell Execution Policy (Windows)
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+## 💻 Usage
+
+### Method 1: Universal Launcher (Recommended)
+```bash
+./sysadmin-toolkit.sh
+```
+
+**Features:**
+- Automatic OS detection
+- Menu-driven interface
+- Built-in help and documentation
+- Safe script execution
+
+### Method 2: Direct Script Execution
+
+**Linux:**
+```bash
+sudo ./bin/linux/create_user.sh -u username -f "Full Name"
+```
+
+**Windows:**
+```powershell
+. .\bin\windows\New-BulkUsers.ps1
+New-LocalUserAccount -Username "username" -FullName "Full Name"
+```
 
 ## 📁 Project Structure
 ```
 sysadmin-toolkit/
-├── bin/              # Executable scripts (Linux & Windows)
-├── lib/              # Shared code libraries
-├── config/           # Configuration files
-├── data/             # Test data and generators
-├── docs/             # Documentation
-├── tests/            # Test scripts
-└── research/         # Research paper materials
+├── sysadmin-toolkit.sh          # Universal launcher
+├── README.md                     # This file
+├── DEMO.md                       # Usage scenarios
+├── bin/
+│   ├── linux/                    # Linux automation scripts
+│   │   ├── create_user.sh
+│   │   ├── create_users_from_csv.sh
+│   │   ├── backup_files.sh
+│   │   ├── rotate_logs.sh
+│   │   ├── monitor_system.sh
+│   │   └── manage_service.sh
+│   └── windows/                  # Windows automation scripts
+│       ├── New-BulkUsers.ps1
+│       ├── Backup-Files.ps1
+│       ├── Manage-EventLogs.ps1
+│       ├── Monitor-System.ps1
+│       └── Manage-Service.ps1
+├── lib/
+│   └── common.sh                 # Shared functions (Linux)
+├── data/
+│   └── test_users.csv            # Sample user data
+└── docs/
+    └── examples/                 # Sample outputs
 ```
 
-## ✅ Progress
+## 🔧 Requirements
 
-- [x] Project setup and folder structure ✅
-- [ ] Data generator with Faker
-- [ ] User management scripts
-- [ ] Backup system
-- [ ] Service monitoring
+### Linux
+- Operating System: Ubuntu 20.04+, CentOS 8+, or equivalent
+- Shell: Bash 4.0+
+- Utilities: tar, gzip, systemctl, useradd, df, top
+- Permissions: root/sudo access
 
-## 📊 Technologies
+### Windows
+- Operating System: Windows Server 2019+, Windows 10/11
+- PowerShell: Version 5.1 or higher
+- .NET Framework: 4.5+
+- Permissions: Administrator access
+- Optional: Git Bash (for universal launcher)
 
-- **Languages:** Bash, PowerShell, Python
-- **Tools:** Git, Faker, ShellCheck, VirtualBox
-- **Platforms:** Linux (Ubuntu), Windows Server
+## 🧪 Testing
 
-## 📖 Documentation
+### Test Environment
+- **Linux VM:** Ubuntu 24.04 LTS (VirtualBox)
+- **Windows VM:** Windows Server 2022 Standard Evaluation (VirtualBox)
 
-- **[Data Generator Explanation](docs/data_generator_explained.md)** - Comprehensive breakdown of how the Faker script works
-- **[Learning Notes](docs/my_learning_notes.md)** - Development journal and key concepts learned
-- **[Installation Guide](docs/installation.md)** - Coming soon
-- **[User Guide](docs/user_guide.md)** - Coming soon
+### Tested Scenarios
+- ✅ User creation (50+ users from CSV on both platforms)
+- ✅ Backup creation and rotation
+- ✅ Log rotation and cleanup
+- ✅ System monitoring with alerts
+- ✅ Service management (start/stop/restart)
+- ✅ Cross-platform launcher functionality
+
+### Test Results
+- All 10 scripts: ✅ Working
+- Universal launcher: ✅ OS detection accurate
+- Audit logging: ✅ All actions logged
+- Error handling: ✅ Graceful failures
+
+## 📚 Documentation
+
+- **DEMO.md** - Detailed usage scenarios and walkthroughs
+- **Inline Comments** - All scripts thoroughly documented
+- **Help Functions** - Built into each script (`--help` flag)
+- **Audit Logs** - Complete action history
+
+### Audit Logging
+
+**Linux:** `/var/log/sysadmin-toolkit/audit.log`
+**Windows:** `C:\Logs\SysAdminToolkit\audit.log`
+
+Format: `[YYYY-MM-DD HH:MM:SS] ACTION:action_name RESULT:status DETAILS:info`
+
+## 🎓 Educational Value
+
+This project demonstrates:
+- **Cross-platform scripting** (Bash + PowerShell)
+- **System administration best practices**
+- **Security implementation** (password policies, permissions)
+- **Automation principles** (DRY, modularity, error handling)
+- **Professional development** (version control, documentation, testing)
+
 ## 👤 Author
 
-Cyril Thomas
-[SUNY Albany]
+**Cyril Thomas**
+- Project: System Administration Automation Toolkit
+- Date: November 2025
+- Purpose: Capstone Project - System Administration & Security
 
 ## 📄 License
 
-MIT License
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- Built as a capstone project demonstrating system administration skills
+- Tested on VirtualBox VMs (Ubuntu 24.04 & Windows Server 2022)
+- Inspired by real-world sysadmin challenges
+
+## 📞 Support
+
+For issues, questions, or contributions:
+- Open an issue on GitHub
+- Submit a pull request
+- Contact: [your-email@example.com]
+
+---
+
+**⭐ If you find this toolkit useful, please star the repository!**
