@@ -22,8 +22,8 @@ The SysAdmin Toolkit is an automation suite I built for managing both Linux and 
 
 - [Quick Start](#-quick-start)
 - [Features](#-features)
-- [Linux Tools](#-linux-tools)
-- [Windows Tools](#-windows-tools)
+- [Linux Tools](#linux-tools)
+- [Windows Tools](#windows-tools)
 - [Installation](#-installation)
 - [Project Structure](#-project-structure)
 - [Requirements](#-requirements)
