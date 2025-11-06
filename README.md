@@ -1,6 +1,6 @@
 # SysAdmin Toolkit - Universal Edition
 
-> A comprehensive cross-platform system administration automation toolkit with 10 production-ready scripts unified under a single launcher.
+> A comprehensive cross-platform system administration automation toolkit.
 
 ![Version](https://img.shields.io/badge/version-1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -8,7 +8,7 @@
 
 ## 🎯 Overview
 
-The SysAdmin Toolkit is a professional-grade automation suite designed for system administrators working in mixed Linux/Windows environments. It provides 10 essential tools accessible through a unified, cross-platform launcher.
+The SysAdmin Toolkit is an automation suite I built for managing both Linux and Windows systems. It includes 10 essential tools, all organized under one easy-to-use, cross-platform launcher to help streamline system administration tasks.
 
 **Key Features:**
 - ✅ Universal bash launcher with automatic OS detection
@@ -20,12 +20,11 @@ The SysAdmin Toolkit is a professional-grade automation suite designed for syste
 
 ## 📋 Table of Contents
 
-- [Quick Start](#quick-start)
-- [Features](#features)
-- [Linux Tools](#linux-tools)
+- [Quick Start](##quick-start)
+- [Features](##features)
+- [Linux Tools](##linux-tools)
 - [Windows Tools](#windows-tools)
 - [Installation](#installation)
-- [Usage](#usage)
 - [Project Structure](#project-structure)
 - [Requirements](#requirements)
 - [Testing](#testing)
