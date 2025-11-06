@@ -17,7 +17,7 @@ MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Configuration 
-#Defines where the script is coming from - then Defines subfolder paths for Linux/Windows
+#Defines script location - then Defines subfolder paths for Linux/Windows
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 
 LINUX_BIN="$SCRIPT_DIR/bin/linux"
 WINDOWS_BIN="$SCRIPT_DIR/bin/windows"
