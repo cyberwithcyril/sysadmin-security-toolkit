@@ -16,7 +16,7 @@ The SysAdmin Toolkit is a professional-grade automation suite designed for syste
 - ✅ 5 Windows automation scripts (PowerShell)
 - ✅ Comprehensive audit logging
 - ✅ Menu-driven interface
-- ✅ Production-ready code
+
 
 ## 📋 Table of Contents
 
