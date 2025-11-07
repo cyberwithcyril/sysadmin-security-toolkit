@@ -10,13 +10,6 @@
 
 The SysAdmin Toolkit is an automation suite I built for managing both Linux and Windows systems. It includes 10 essential tools, all organized under one easy-to-use, cross-platform launcher to help streamline system administration tasks.
 
-**Key Features:**
-- ✅ Universal bash launcher with automatic OS detection
-- ✅ 5 Linux automation scripts (Bash)
-- ✅ 5 Windows automation scripts (PowerShell)
-- ✅ Comprehensive audit logging
-- ✅ Menu-driven interface
-
 
 ## 📋 Table of Contents
 
