@@ -1,4 +1,4 @@
-# SysAdmin Toolkit - Universal Edition
+# SysAdmin Toolkit - Crossplatform
 
 > A comprehensive cross-platform system administration automation toolkit.
 
