@@ -1,8 +1,8 @@
 <#
 .SYNOPSIS
-    Windows bulk user creation with security policies
+    Windows Bulk User Creation with Enforced Security Policies
 .DESCRIPTION
-    Creates local user accounts with password policies, group management, and audit logging
+    Creates Local user Accounts with Password Policies, Group Management & Audit Loggging
 .AUTHOR
     Cyril Thomas
 .DATE
@@ -17,9 +17,10 @@
 $AuditLog = "C:\Logs\SysAdminToolkit\audit.log"
 $LogDir = "C:\Logs\SysAdminToolkit"
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: Write-AuditLog
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Write-AuditLog - reusable function for logging system events, captures timestamps, and validates log folder exists
 function Write-AuditLog {
     param(
         [string]$Action,
@@ -38,18 +39,18 @@ function Write-AuditLog {
     Write-Host $LogEntry
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: Test-Administrator
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 function Test-Administrator {
     $CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $Principal = New-Object Security.Principal.WindowsPrincipal($CurrentUser)
     return $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: New-LocalUserAccount
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 function New-LocalUserAccount {
     param(
         [Parameter(Mandatory=$true)]
@@ -146,9 +147,9 @@ function New-LocalUserAccount {
     }
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Function: Import-UsersFromCSV
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 function Import-UsersFromCSV {
     param(
         [Parameter(Mandatory=$true)]
@@ -211,9 +212,9 @@ function Import-UsersFromCSV {
     Write-AuditLog -Action "BULK_USER_CREATE" -Result "SUCCESS" -Details "total=$Total success=$SuccessCount failed=$FailCount"
 }
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Main Script
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Write-Host "`n=========================================" -ForegroundColor Cyan
 Write-Host " Windows User Creation Script v2.0" -ForegroundColor Cyan
