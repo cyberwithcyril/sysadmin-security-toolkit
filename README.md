@@ -40,7 +40,7 @@ cd sysadmin-toolkit
 ./sysadmin-toolkit.sh
 ```
 
-## ✨ Features
+## ✨  Features
 
 ### Universal Launcher
 
