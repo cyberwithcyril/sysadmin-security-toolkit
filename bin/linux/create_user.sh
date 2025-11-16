@@ -1,19 +1,25 @@
 #!/bin/bash
-################################################################################
+#******************************************************************************
 # Script Name: create_user.sh
 # Description: Creates user accounts with security policies
 # Author: Cyril Thomas
 # Date: November 4, 2025
 # Version: 1.0
-################################################################################
+#******************************************************************************
 
 # Source shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../lib/common.sh"
 
-################################################################################
+#*******************************************************************************
 # Function: validate_username
-################################################################################
+#*******************************************************************************
+#Checks if username is valid before creating a username using 4 checks 
+#a. username is empty
+#b. username length is valid - less than 3 char or greater than 32 char
+#c. linux username rules - first char must be lowerchase - remaining char can be lowercase
+#underscore, dot, or hyphen
+#d. username already exists on the system
 validate_username() {
     local username="$1"
     
@@ -41,9 +47,10 @@ validate_username() {
     return 0
 }
 
-################################################################################
+#*******************************************************************************
 # Function: create_user_account
-################################################################################
+#*******************************************************************************
+#Create a new user account with security settings, teemporary password and group assignment
 create_user_account() {
     local username="$1"
     local fullname="$2"
@@ -54,6 +61,7 @@ create_user_account() {
     echo "----------------------------------------"
     
     # Create user
+    #Ref:useradd is a linux command to create a new user 
     if useradd "$username" --create-home --shell /bin/bash --comment "$fullname" 2>/dev/null; then
         print_success "User account created"
     else
@@ -62,28 +70,32 @@ create_user_account() {
         return 1
     fi
     
-    # Set permissions
+    # Set permissions - New user can access home directory
     chmod 750 /home/"$username"
     chown "$username":"$username" /home/"$username"
     print_success "Home directory secured (750)"
     
-    # Generate password
+    # Generate random password and encodes in base 64
     local temp_password=$(openssl rand -base64 12)
+    #sets username with password
     echo "$username:$temp_password" | chpasswd
     print_success "Temporary password set"
     
     # Password policies
+    #Ref:chage - Change age-command - Sets last password change date to 0
     chage -d 0 "$username"
     print_success "Password change required on first login"
     
+    #Sets password age to 90 days
     chage -M 90 "$username"
     print_success "Password expires in 90 days"
     
+    #Sets account expiration date
     local expire_date=$(date -d "+1 year" +%Y-%m-%d)
     chage -E "$expire_date" "$username"
     print_success "Account expires: $expire_date"
     
-    # Add to groups
+    # Adds user to groups defined in csv [faker data]
     if [ -n "$groups" ]; then
         IFS=',' read -ra GROUP_ARRAY <<< "$groups"
         for group in "${GROUP_ARRAY[@]}"; do
@@ -96,6 +108,7 @@ create_user_account() {
         done
     fi
     
+    #Logs Action after user is created
     log_action "USER_CREATE" "SUCCESS" "username=$username fullname='$fullname'"
     
     echo ""
@@ -108,9 +121,11 @@ create_user_account() {
     return 0
 }
 
-################################################################################
+#*******************************************************************************
 # Function: show_usage
-################################################################################
+#*******************************************************************************
+#Displays instructions for the user of how the create_user script works
+#Examples of how the script works
 show_usage() {
     cat << USAGE
 Usage: $0 [OPTIONS]
@@ -129,7 +144,7 @@ USAGE
 }
 
 ################################################################################
-# Main
+# Main - Controller
 ################################################################################
 
 print_header "User Creation Script v1.0"
@@ -164,8 +179,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+#checks root priviledges
 check_root
 
+#checks required parameters
 if [ -z "$USERNAME" ] || [ -z "$FULLNAME" ]; then
     print_error "Username and fullname required"
     show_usage
