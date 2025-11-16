@@ -1,28 +1,32 @@
 #!/bin/bash
-################################################################################
+#******************************************************************************
 # Script Name: backup_files.sh
 # Description: Automated file backup with compression and rotation
 # Author: Cyril Thomas
 # Date: November 4, 2025
 # Version: 1.0
-################################################################################
+#******************************************************************************
 
 # Source shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../lib/common.sh"
 
 # Configuration
+#Directory 'home'
 BACKUP_SOURCE="/home"
+#Backed up 'backup' dir
 BACKUP_DEST="/backup"
+#Time frame
 RETENTION_DAYS=7
 
-################################################################################
+#*******************************************************************************
 # Function: validate_paths
-################################################################################
+#*******************************************************************************
+#Function ensures path for backup source and destination exists - Creates if necessary
 validate_paths() {
     print_info "Validating backup paths..."
     
-    # Check source exists
+    # Check source directory 'home' exists
     if [ ! -d "$BACKUP_SOURCE" ]; then
         print_error "Source directory does not exist: $BACKUP_SOURCE"
         return 1
@@ -32,6 +36,7 @@ validate_paths() {
     # Create destination if needed
     if [ ! -d "$BACKUP_DEST" ]; then
         mkdir -p "$BACKUP_DEST"
+    #Sets permissions to owner:read/write/execute, others: read/execute
         chmod 755 "$BACKUP_DEST"
         print_success "Created destination: $BACKUP_DEST"
     else
@@ -101,24 +106,29 @@ create_backup() {
     fi
 }
 
-################################################################################
+#*******************************************************************************
 # Function: rotate_backups
-################################################################################
+#*******************************************************************************
+#Function implements backup rotation - Automatically deleting old backup files based on set retention
 rotate_backups() {
-    local dest="$1"
-    local retention="$2"
+    local dest="$1" #Backup destination
+    local retention="$2" #Number of days to keep backup
     
     print_info "Rotating old backups (keeping last $retention days)..."
     
     # Find and delete old backups
     local deleted_count=0
     
+    #Deletion
     while IFS= read -r file; do
         if [ -f "$file" ]; then
             rm -f "$file"
             print_success "Deleted: $(basename $file)"
             ((deleted_count++))
         fi
+    #Checks destination for file names starting with backup_using wildcard* and checks time comparing it to 
+    #retention set
+
     done < <(find "$dest" -name "backup_*.tar.gz" -type f -mtime +$retention)
     
     if [ $deleted_count -eq 0 ]; then
@@ -131,29 +141,32 @@ rotate_backups() {
     return 0
 }
 
-################################################################################
+#******************************************************************************
 # Function: list_backups
-################################################################################
+#******************************************************************************
+#Function list all backup files with their sizes and dates
+#Takes the backups from destination and prints
 list_backups() {
     local dest="$1"
     
     print_info "Current backups in $dest:"
     echo ""
-    
+#Checks if backups exists
     if [ ! -d "$dest" ] || [ -z "$(ls -A $dest)" ]; then
         echo "  No backups found"
         return 0
     fi
-    
+#Prints destination - ignores error messages and formats to readable format - Example: `backup_20251115.tar.gz - 2.3M - Nov 15 14:30`  
     ls -lh "$dest"/backup_*.tar.gz 2>/dev/null | awk '{print "  " $9 " - " $5 " - " $6 " " $7 " " $8}' || echo "  No backups found"
     echo ""
     
     return 0
 }
 
-################################################################################
+#******************************************************************************
 # Function: show_usage
-################################################################################
+#******************************************************************************
+#Creates/display help instructions for the user
 show_usage() {
     cat << USAGE
 Usage: $0 [OPTIONS]
@@ -174,9 +187,9 @@ Examples:
 USAGE
 }
 
-################################################################################
-# Main
-################################################################################
+#*******************************************************************************
+# Main Function 
+#*******************************************************************************
 
 print_header "Backup Script v1.0"
 
@@ -213,6 +226,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+#Checks permissions - need root/sudo priviledges
 check_root
 
 # Configuration summary
