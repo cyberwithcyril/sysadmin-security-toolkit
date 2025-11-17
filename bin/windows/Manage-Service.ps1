@@ -1,15 +1,16 @@
-<#
+<#*****************************************************************************
 .SYNOPSIS
     Windows service management script
 .DESCRIPTION
-    Start, stop, restart, and manage Windows services
+    Manages Windows Services - List all Services, Show info, Start/Stop/Restart 
+    Change Startup Type [Automatic/Manual/Disabled]
 .AUTHOR
     Cyril Thomas
 .DATE
     November 5, 2025
 .VERSION
     1.0
-#>
+*******************************************************************************#>
 
 #Requires -RunAsAdministrator
 
@@ -17,9 +18,11 @@
 $AuditLog = "C:\Logs\SysAdminToolkit\audit.log"
 $LogDir = "C:\Logs\SysAdminToolkit"
 
-################################################################################
+#*******************************************************************************
 # Function: Write-AuditLog
-################################################################################
+#*******************************************************************************
+#Logs Actions to Audit File
+
 function Write-AuditLog {
     param(
         [string]$Action,
@@ -37,42 +40,54 @@ function Write-AuditLog {
     Add-Content -Path $AuditLog -Value $LogEntry
 }
 
-################################################################################
+#*******************************************************************************
 # Function: Test-Administrator
-################################################################################
+#*******************************************************************************
+#Checks if running as Admin
 function Test-Administrator {
     $CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $Principal = New-Object Security.Principal.WindowsPrincipal($CurrentUser)
     return $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-################################################################################
+#******************************************************************************
 # Function: Get-ServiceList
-################################################################################
+#******************************************************************************
+#Lists all Windows Services [Running & Stopped]
+
 function Get-ServiceList {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host " Windows Services" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
     
     Write-Host "`nRunning Services:" -ForegroundColor Green
+
+#Retrieves all services where status is running [First 20] - Displays as table 
+#- [Name, DisplayName, Status]
     Get-Service | Where-Object {$_.Status -eq 'Running'} | 
         Select-Object -First 20 | 
         Format-Table Name, DisplayName, Status -AutoSize
-    
+
+#Retrieves all services where status is stopped [First 10] - Displays as table 
+#- [Name, DisplayName, Status]    
     Write-Host "`nStopped Services:" -ForegroundColor Yellow
     Get-Service | Where-Object {$_.Status -eq 'Stopped'} | 
         Select-Object -First 10 | 
         Format-Table Name, DisplayName, Status -AutoSize
-    
+
+#Gets Total Count of All Running Services 
     $RunningCount = (Get-Service | Where-Object {$_.Status -eq 'Running'}).Count
+#Gets Total Count of All Stopped Services
     $StoppedCount = (Get-Service | Where-Object {$_.Status -eq 'Stopped'}).Count
     
     Write-Host "Total: $RunningCount running, $StoppedCount stopped" -ForegroundColor White
 }
 
-################################################################################
+#*******************************************************************************
 # Function: Get-ServiceInfo
-################################################################################
+#*******************************************************************************
+# Shows detailed information about a specific service
+
 function Get-ServiceInfo {
     param([string]$ServiceName)
     
@@ -81,16 +96,20 @@ function Get-ServiceInfo {
     Write-Host "========================================" -ForegroundColor Cyan
     
     try {
+#Gets specific service by name
         $Service = Get-Service -Name $ServiceName -ErrorAction Stop
-        
+#Displays Service Name, Display Name, Service Status, and Starttype        
         Write-Host "`nBasic Information:" -ForegroundColor Yellow
         Write-Host "  Name: $($Service.Name)" -ForegroundColor White
         Write-Host "  Display Name: $($Service.DisplayName)" -ForegroundColor White
         Write-Host "  Status: $($Service.Status)" -ForegroundColor $(if ($Service.Status -eq 'Running') { 'Green' } else { 'Red' })
         Write-Host "  Start Type: $($Service.StartType)" -ForegroundColor White
         
-        # Get WMI info for more details
+#Retrieves WMI Information using 'Get-CimInstance' - Query Windows Management Instrumentation
+#WMI contains Process ID, Path & Additional Description
         $WMIService = Get-CimInstance -ClassName Win32_Service -Filter "Name='$ServiceName'"
+
+#Displays Process ID, Path, & Description of Service       
         if ($WMIService) {
             Write-Host "`nAdditional Details:" -ForegroundColor Yellow
             Write-Host "  Process ID: $($WMIService.ProcessId)" -ForegroundColor White
@@ -98,8 +117,10 @@ function Get-ServiceInfo {
             Write-Host "  Description: $($WMIService.Description)" -ForegroundColor White
         }
         
-        # Check dependencies
+#Checks Dependencies needed for the Service
         $Dependencies = $Service.ServicesDependedOn
+
+#If Dependencies are greater than 0 - Display all Dependencies [Name/Status]
         if ($Dependencies.Count -gt 0) {
             Write-Host "`nDepends On:" -ForegroundColor Yellow
             $Dependencies | ForEach-Object {
@@ -115,28 +136,35 @@ function Get-ServiceInfo {
     }
 }
 
-################################################################################
+#******************************************************************************
 # Function: Start-ServiceSafe
-################################################################################
+#******************************************************************************
+#Starts a Windows Service Safely
+
 function Start-ServiceSafe {
     param([string]$ServiceName)
     
     Write-Host "`n[INFO] Starting service: $ServiceName" -ForegroundColor Cyan
     
     try {
+
         $Service = Get-Service -Name $ServiceName -ErrorAction Stop
-        
+
+#Checks if Service is Running        
         if ($Service.Status -eq 'Running') {
             Write-Host "[INFO] Service is already running" -ForegroundColor Yellow
             return $true
         }
-        
+#Starts Service - PS [Start-Serivce]        
         Start-Service -Name $ServiceName -ErrorAction Stop
+#Sets Service Time to Start
         Start-Sleep -Seconds 2
-        
+
+#Checks/Validates Service is Running       
         $Service = Get-Service -Name $ServiceName
         if ($Service.Status -eq 'Running') {
             Write-Host "[SUCCESS] Service started successfully" -ForegroundColor Green
+#Logs Action - Success/Failure
             Write-AuditLog -Action "SERVICE_START" -Result "SUCCESS" -Details "service=$ServiceName"
             return $true
         } else {
@@ -152,9 +180,11 @@ function Start-ServiceSafe {
     }
 }
 
-################################################################################
+#******************************************************************************
 # Function: Stop-ServiceSafe
-################################################################################
+#******************************************************************************
+#Stops a Windows Service Safely
+
 function Stop-ServiceSafe {
     param([string]$ServiceName)
     
@@ -162,18 +192,21 @@ function Stop-ServiceSafe {
     
     try {
         $Service = Get-Service -Name $ServiceName -ErrorAction Stop
-        
+#Checks if Service Status is 'Stopped'        
         if ($Service.Status -eq 'Stopped') {
             Write-Host "[INFO] Service is already stopped" -ForegroundColor Yellow
             return $true
         }
-        
+#Stops Service using PS [Stop-Service]        
         Stop-Service -Name $ServiceName -Force -ErrorAction Stop
+#Sets Time for Service to Stop -2 seconds
         Start-Sleep -Seconds 2
         
+#Checks/Validates Service Status 'Stopped'
         $Service = Get-Service -Name $ServiceName
         if ($Service.Status -eq 'Stopped') {
             Write-Host "[SUCCESS] Service stopped successfully" -ForegroundColor Green
+#Logs Action - Success/Failure
             Write-AuditLog -Action "SERVICE_STOP" -Result "SUCCESS" -Details "service=$ServiceName"
             return $true
         } else {
@@ -189,21 +222,28 @@ function Stop-ServiceSafe {
     }
 }
 
-################################################################################
+#*******************************************************************************
 # Function: Restart-ServiceSafe
-################################################################################
+#*******************************************************************************
+#Restarts Service Safely - Stops Then Starts
+
 function Restart-ServiceSafe {
     param([string]$ServiceName)
     
     Write-Host "`n[INFO] Restarting service: $ServiceName" -ForegroundColor Cyan
     
     try {
+
+#Restarts Service using PS[Restart-Service]
         Restart-Service -Name $ServiceName -Force -ErrorAction Stop
+#Sets Time for Stop Restart - 2seconds
         Start-Sleep -Seconds 2
         
         $Service = Get-Service -Name $ServiceName
+#Checks/Validates Service is Running
         if ($Service.Status -eq 'Running') {
             Write-Host "[SUCCESS] Service restarted successfully" -ForegroundColor Green
+#Logs Action - Success/Failure
             Write-AuditLog -Action "SERVICE_RESTART" -Result "SUCCESS" -Details "service=$ServiceName"
             return $true
         } else {
@@ -219,9 +259,10 @@ function Restart-ServiceSafe {
     }
 }
 
-################################################################################
+#*******************************************************************************
 # Function: Set-ServiceStartup
-################################################################################
+#*******************************************************************************
+#Changes how a service starts - [Automatic, Manual, Disabled]
 function Set-ServiceStartup {
     param(
         [string]$ServiceName,
@@ -232,8 +273,11 @@ function Set-ServiceStartup {
     Write-Host "`n[INFO] Setting startup type for $ServiceName to $StartupType" -ForegroundColor Cyan
     
     try {
+
+#Changes Startup Type using PS [Set-Service -StartupType]
         Set-Service -Name $ServiceName -StartupType $StartupType -ErrorAction Stop
         Write-Host "[SUCCESS] Startup type changed to $StartupType" -ForegroundColor Green
+#Logs Action - Success/Failure      
         Write-AuditLog -Action "SERVICE_STARTUP_CHANGE" -Result "SUCCESS" -Details "service=$ServiceName startup=$StartupType"
         return $true
     }
@@ -244,15 +288,15 @@ function Set-ServiceStartup {
     }
 }
 
-################################################################################
-# Main Script
-################################################################################
+#*******************************************************************************
+# Main Script - Controller
+#*******************************************************************************
 
 Write-Host "`n=========================================" -ForegroundColor Cyan
 Write-Host " Windows Service Management v1.0" -ForegroundColor Cyan
 Write-Host "=========================================" -ForegroundColor Cyan
 
-# Check administrator
+#Check Administrator
 if (-not (Test-Administrator)) {
     Write-Host "[ERROR] This script must be run as Administrator" -ForegroundColor Red
     exit 1
@@ -260,7 +304,7 @@ if (-not (Test-Administrator)) {
 
 Write-Host "[SUCCESS] Running with Administrator privileges" -ForegroundColor Green
 
-# Show usage
+#Displays Help Menu
 Write-Host "`nScript loaded successfully!" -ForegroundColor Green
 Write-Host "`nAvailable Commands:" -ForegroundColor Yellow
 Write-Host "  Get-ServiceList                           # List all services" -ForegroundColor Gray
