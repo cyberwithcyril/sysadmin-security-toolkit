@@ -1,31 +1,38 @@
 #!/bin/bash
-################################################################################
+#******************************************************************************
 # Script Name: rotate_logs.sh
 # Description: Automated log rotation, compression, and cleanup
 # Author: Cyril Thomas
 # Date: November 4, 2025
 # Version: 1.0
-################################################################################
+#*******************************************************************************
 
 # Source shared library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../../lib/common.sh"
 
 # Configuration
-LOG_DIRS=("/var/log")
-MAX_SIZE_MB=50
-RETENTION_DAYS=30
-COMPRESS_AFTER_DAYS=7
+LOG_DIRS=("/var/log") #Array of Directories to monitor
+MAX_SIZE_MB=50 #Threshold for large log files
+RETENTION_DAYS=30 #Keep Logs Before Deletion
+COMPRESS_AFTER_DAYS=7 #Logs Older than 7 Days Get Compressed
 
-################################################################################
+#*******************************************************************************
 # Function: find_large_logs
-################################################################################
+#*******************************************************************************
+#Function finds log files exceeding the size threshold
+
 find_large_logs() {
+#Get size parameter of log file
     local max_size_mb="$1"
     
     print_info "Scanning for large log files (>${max_size_mb}MB)..."
     
+#Initialize Counter - Tracks large files found
     local count=0
+
+#Loops through each found file - Verifies if file exists, Extracts first field [file size]
+#increments counter
     while IFS= read -r file; do
         if [ -f "$file" ]; then
             local size=$(du -h "$file" | cut -f1)
@@ -33,7 +40,8 @@ find_large_logs() {
             ((count++))
         fi
     done < <(find "${LOG_DIRS[@]}" -type f -name "*.log" -size +${max_size_mb}M 2>/dev/null)
-    
+
+#Display summary if no large files/# of large log files 
     if [ $count -eq 0 ]; then
         print_success "No large log files found"
     else
@@ -43,21 +51,28 @@ find_large_logs() {
     return $count
 }
 
-################################################################################
+#*******************************************************************************
 # Function: find_old_logs
-################################################################################
+#*******************************************************************************
+#Finds logs older than retention period [30], Displayes each old file with modification date,
+#count and reports total
+
 find_old_logs() {
     local retention_days="$1"
     
     print_info "Scanning for old log files (>${retention_days} days)..."
     
     local count=0
+
     while IFS= read -r file; do
         if [ -f "$file" ]; then
             local age=$(find "$file" -mtime +$retention_days -printf "%TY-%Tm-%Td\n" 2>/dev/null)
             echo "  Found: $file (modified: $age)"
             ((count++))
         fi
+
+#Finds log files matching three patterns - .log [active logs], .log.1,.log.2 [rotated logs].
+#.gz [Compressed logs]
     done < <(find "${LOG_DIRS[@]}" -type f \( -name "*.log" -o -name "*.log.*" -o -name "*.gz" \) -mtime +$retention_days 2>/dev/null)
     
     if [ $count -eq 0 ]; then
@@ -69,26 +84,34 @@ find_old_logs() {
     return $count
 }
 
-################################################################################
+#******************************************************************************
 # Function: compress_log
-################################################################################
+#*******************************************************************************
+
 compress_log() {
+
+#Get logfile path    
     local logfile="$1"
-    
+#Verify FIle Exists   
     if [ ! -f "$logfile" ]; then
         return 1
     fi
     
-    # Don't compress if already compressed
+#Checks if logfile is compressed by checking against wild card *.gz - Returns 0
     if [[ "$logfile" == *.gz ]]; then
         return 0
     fi
-    
+
+#Get size before compression  
     local size_before=$(du -h "$logfile" | cut -f1)
-    
+
+#Compresses the file - command gzip [compression] -f [force]    
     if gzip -f "$logfile" 2>/dev/null; then
+       
+#Gets new compressed size of log file
         local size_after=$(du -h "${logfile}.gz" | cut -f1)
         print_success "Compressed: $(basename $logfile) ($size_before → $size_after)"
+#Logs Log Compression Action      
         log_action "LOG_COMPRESS" "SUCCESS" "file=$(basename $logfile) size_before=$size_before size_after=$size_after"
         return 0
     else
@@ -97,20 +120,27 @@ compress_log() {
     fi
 }
 
-################################################################################
+#******************************************************************************
 # Function: delete_old_log
-################################################################################
+#******************************************************************************
+#Verifies file exists, records file size before deletion, deletes the file, displays confirmation
 delete_old_log() {
+
+#Gets log file path
     local logfile="$1"
-    
+
+#Verifies Log File Exists   
     if [ ! -f "$logfile" ]; then
         return 1
     fi
-    
+#Gets record size for logging before deletion    
     local size=$(du -h "$logfile" | cut -f1)
-    
+
+#Deletes the file using the rm[remove command] -f [force]   
     if rm -f "$logfile" 2>/dev/null; then
         print_success "Deleted: $(basename $logfile) ($size)"
+
+#Logs Action      
         log_action "LOG_DELETE" "SUCCESS" "file=$(basename $logfile) size=$size"
         return 0
     else
@@ -119,40 +149,54 @@ delete_old_log() {
     fi
 }
 
-################################################################################
+#******************************************************************************
 # Function: rotate_logs
-################################################################################
+#******************************************************************************
+#Manages files that have been rotated - Log Clean up
+
 rotate_logs() {
     print_info "Starting log rotation process..."
     echo ""
+
+#Initialize Counters   
+    local compressed_count=0 #Compressed file counter
+    local deleted_count=0 #Deleted file counter
     
-    local compressed_count=0
-    local deleted_count=0
-    
-    # Compress logs older than COMPRESS_AFTER_DAYS
+#Compress logs older than COMPRESS_AFTER_DAYS [7 Days]
     print_info "Step 1: Compressing old uncompressed logs..."
+  
+#Processes one file at a time
     while IFS= read -r file; do
+
+#Checks if it is a real file and that file is not already compressed     
         if [ -f "$file" ] && [[ "$file" != *.gz ]]; then
             if compress_log "$file"; then
                 ((compressed_count++))
             fi
         fi
+#Provides the list of files to compress
     done < <(find "${LOG_DIRS[@]}" -type f -name "*.log.*" -mtime +$COMPRESS_AFTER_DAYS ! -name "*.gz" 2>/dev/null)
-    
+
+#Checks if Nothing was compressed    
     if [ $compressed_count -eq 0 ]; then
         print_info "  No logs to compress"
     fi
     
     echo ""
     
-    # Delete logs older than RETENTION_DAYS
+ # Delete logs older than RETENTION_DAYS
     print_info "Step 2: Deleting old logs..."
+
+#Checks if file exists
     while IFS= read -r file; do
+
+#If the log exists then call the delete_old_log function
         if [ -f "$file" ]; then
             if delete_old_log "$file"; then
                 ((deleted_count++))
             fi
         fi
+#Finds files rotated - .log. or compressed -*.gz using retention time - older than 30 days
     done < <(find "${LOG_DIRS[@]}" -type f \( -name "*.log.*" -o -name "*.gz" \) -mtime +$RETENTION_DAYS 2>/dev/null)
     
     if [ $deleted_count -eq 0 ]; then
@@ -160,28 +204,38 @@ rotate_logs() {
     fi
     
     echo ""
+#Displays Rotation Summary
     print_header "Rotation Summary"
     echo "Compressed: $compressed_count log file(s)"
     echo "Deleted: $deleted_count log file(s)"
-    
+
+#Logs Rotation Action   
     log_action "LOG_ROTATION" "SUCCESS" "compressed=$compressed_count deleted=$deleted_count"
     
     return 0
 }
 
-################################################################################
+#******************************************************************************
 # Function: show_log_stats
-################################################################################
+#******************************************************************************
+#Function Displays Log Directory Statistics
+
 show_log_stats() {
     print_info "Log directory statistics:"
     echo ""
-    
+
+#Iterates through directory
     for dir in "${LOG_DIRS[@]}"; do
+#If directory exists
         if [ -d "$dir" ]; then
+#Gets total size of the directory
             local total_size=$(du -sh "$dir" 2>/dev/null | cut -f1)
+#Count log files
             local log_count=$(find "$dir" -type f \( -name "*.log" -o -name "*.log.*" \) 2>/dev/null | wc -l)
+#Count compressed .gz files           
             local gz_count=$(find "$dir" -type f -name "*.gz" 2>/dev/null | wc -l)
-            
+
+#Displays directory name, total size, total count of lofs, total compressed files           
             echo "  Directory: $dir"
             echo "    Total size: $total_size"
             echo "    Log files: $log_count"
@@ -191,9 +245,10 @@ show_log_stats() {
     done
 }
 
-################################################################################
+#******************************************************************************
 # Function: show_usage
-################################################################################
+#******************************************************************************
+#Help-Usage Manaul for Rotate_Logs Script
 show_usage() {
     cat << USAGE
 Usage: $0 [OPTIONS]
@@ -216,9 +271,9 @@ Examples:
 USAGE
 }
 
-################################################################################
-# Main
-################################################################################
+#******************************************************************************
+# Main - Controller for Log Rotation Script
+#******************************************************************************
 
 print_header "Log Rotation Script v1.0"
 
