@@ -273,6 +273,8 @@ interactive_menu() {
 # Main - Controller
 #*******************************************************************************
 
+check_root
+
 print_header "User Creation Script v1.0"
 
 # Check if running with arguments (command-line mode)
@@ -308,8 +310,6 @@ if [ $# -gt 0 ]; then
         esac
     done
 
-    check_root
-
     if [ -z "$USERNAME" ] || [ -z "$FULLNAME" ]; then
         print_error "Username and fullname required"
         show_usage
@@ -327,6 +327,7 @@ if [ $# -gt 0 ]; then
     fi
 else
     # Interactive mode (no arguments provided)
-    check_root
     interactive_menu
+    # Exit after menu closes
+    exit 0
 fi
