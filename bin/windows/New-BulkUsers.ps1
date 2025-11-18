@@ -230,13 +230,8 @@ function Import-UsersFromCSV {
 }
 
 #**********************************************************************************
-# Main Script - Controller
+# Main Script - Interactive Menu
 #***********************************************************************************
-
-Write-Host "`n=========================================" -ForegroundColor Cyan
-Write-Host " Windows User Creation Script v2.0" -ForegroundColor Cyan
-Write-Host "=========================================" -ForegroundColor Cyan
-Write-Host ""
 
 # Check administrator
 if (-not (Test-Administrator)) {
@@ -245,19 +240,165 @@ if (-not (Test-Administrator)) {
     exit 1
 }
 
-Write-Host "[SUCCESS] Running with Administrator privileges" -ForegroundColor Green
-Write-Host ""
-
-# Show usage
-Write-Host "Script loaded successfully!" -ForegroundColor Green
-Write-Host ""
-Write-Host "Usage Examples:" -ForegroundColor Yellow
-Write-Host "  Single user:" -ForegroundColor White
-Write-Host "    New-LocalUserAccount -Username 'jdoe' -FullName 'John Doe'" -ForegroundColor Gray
-Write-Host ""
-Write-Host "  With groups:" -ForegroundColor White
-Write-Host "    New-LocalUserAccount -Username 'jsmith' -FullName 'Jane Smith' -Groups @('Users','Administrators')" -ForegroundColor Gray
-Write-Host ""
-Write-Host "  From CSV:" -ForegroundColor White
-Write-Host "    Import-UsersFromCSV -CSVPath 'C:\path\to\users.csv'" -ForegroundColor Gray
-Write-Host ""
+# Main menu loop
+while ($true) {
+    Write-Host "`n=========================================" -ForegroundColor Cyan
+    Write-Host " Windows User Creation Script v2.0" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "1. Create single user" -ForegroundColor Yellow
+    Write-Host "2. Create single user with custom groups" -ForegroundColor Yellow
+    Write-Host "3. Create users from CSV file" -ForegroundColor Yellow
+    Write-Host "4. List existing local users" -ForegroundColor Yellow
+    Write-Host "5. View audit log" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "0. Exit to main menu" -ForegroundColor Red
+    Write-Host ""
+    
+    $choice = Read-Host "Select an option"
+    
+    switch ($choice) {
+        "1" {
+            #Create single user with default group (Users)
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Create Single User" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            
+            $username = Read-Host "Enter username"
+            $fullname = Read-Host "Enter full name"
+            
+            if ($username -and $fullname) {
+                New-LocalUserAccount -Username $username -FullName $fullname
+            } else {
+                Write-Host "[ERROR] Username and full name are required" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "2" {
+            #Create single user with custom groups
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Create User with Custom Groups" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            
+            $username = Read-Host "Enter username"
+            $fullname = Read-Host "Enter full name"
+            $description = Read-Host "Enter description (optional, press Enter to skip)"
+            
+            Write-Host "`nAvailable groups:" -ForegroundColor Cyan
+            Write-Host "  - Users (default)"
+            Write-Host "  - Administrators"
+            Write-Host "  - Remote Desktop Users"
+            Write-Host "  - Backup Operators"
+            Write-Host ""
+            $groupInput = Read-Host "Enter groups (comma-separated, e.g., Users,Administrators)"
+            
+            if ([string]::IsNullOrWhiteSpace($groupInput)) {
+                $groups = @("Users")
+            } else {
+                $groups = $groupInput -split ',' | ForEach-Object { $_.Trim() }
+            }
+            
+            if ($username -and $fullname) {
+                if ([string]::IsNullOrWhiteSpace($description)) {
+                    New-LocalUserAccount -Username $username -FullName $fullname -Groups $groups
+                } else {
+                    New-LocalUserAccount -Username $username -FullName $fullname -Description $description -Groups $groups
+                }
+            } else {
+                Write-Host "[ERROR] Username and full name are required" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "3" {
+            #Create users from CSV
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Bulk User Creation from CSV" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            Write-Host "CSV Format Required:" -ForegroundColor Yellow
+            Write-Host "  username,full_name,department,role" -ForegroundColor Gray
+            Write-Host "  jdoe,John Doe,IT,Administrator" -ForegroundColor Gray
+            Write-Host "  jsmith,Jane Smith,HR,Manager" -ForegroundColor Gray
+            Write-Host ""
+            
+            $csvPath = Read-Host "Enter CSV file path"
+            
+            if ($csvPath -and (Test-Path $csvPath)) {
+                $defaultGroup = Read-Host "Enter default group (default: Users)"
+                if ([string]::IsNullOrWhiteSpace($defaultGroup)) {
+                    $defaultGroup = "Users"
+                }
+                
+                Import-UsersFromCSV -CSVPath $csvPath -DefaultGroup $defaultGroup
+            } else {
+                Write-Host "[ERROR] CSV file not found or path not provided" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "4" {
+            #List existing local users
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Local Users" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            
+            $users = Get-LocalUser | Sort-Object Name
+            
+            foreach ($user in $users) {
+                $status = if ($user.Enabled) { "Enabled" } else { "Disabled" }
+                $color = if ($user.Enabled) { "Green" } else { "Red" }
+                
+                Write-Host "User: $($user.Name)" -ForegroundColor White
+                Write-Host "  Full Name: $($user.FullName)" -ForegroundColor Gray
+                Write-Host "  Status: $status" -ForegroundColor $color
+                Write-Host "  Last Logon: $($user.LastLogon)" -ForegroundColor Gray
+                Write-Host ""
+            }
+            
+            Write-Host "Total users: $($users.Count)" -ForegroundColor Cyan
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "5" {
+            #View audit log
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Audit Log (Last 20 entries)" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            
+            if (Test-Path $AuditLog) {
+                Get-Content $AuditLog -Tail 20 | ForEach-Object {
+                    if ($_ -match "SUCCESS") {
+                        Write-Host $_ -ForegroundColor Green
+                    } elseif ($_ -match "FAILURE") {
+                        Write-Host $_ -ForegroundColor Red
+                    } else {
+                        Write-Host $_ -ForegroundColor White
+                    }
+                }
+            } else {
+                Write-Host "[INFO] No audit log found yet" -ForegroundColor Yellow
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "0" {
+            Write-Host "`nReturning to main menu..." -ForegroundColor Green
+            exit 0
+        }
+        default {
+            Write-Host "`n[ERROR] Invalid option" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    }
+}
