@@ -230,32 +230,17 @@ run_linux_monitoring() {
     read -p "Press Enter..."
 }
 
-run_linux_service_management() {
+run_linux_user_management() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Linux Service Management${NC}"
+    echo -e "${CYAN}  Linux User Management${NC}"
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
-    echo "1. List services"
-    echo "2. Check status"
-    echo "3. Restart service"
-    echo "4. Back"
-    echo ""
-    read -p "Select: " choice
+    echo "Launching user management script..."
     
-    case $choice in
-        1) sudo "$LINUX_BIN/manage_service.sh" list ;;
-        2)
-            read -p "Service name: " svc
-            sudo "$LINUX_BIN/manage_service.sh" status "$svc"
-            ;;
-        3)
-            read -p "Service name: " svc
-            sudo "$LINUX_BIN/manage_service.sh" restart "$svc"
-            ;;
-        4) return ;;
-    esac
-    read -p "Press Enter..."
+    # Call script with NO arguments - triggers interactive menu
+    cd "$SCRIPT_DIR"
+    sudo "$LINUX_BIN/create_user.sh"
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
