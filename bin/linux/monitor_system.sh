@@ -277,68 +277,233 @@ USAGE
 }
 
 #******************************************************************************
+# Function: interactive_menu
+#******************************************************************************
+# Interactive menu for system monitoring
+interactive_menu() {
+    while true; do
+        echo ""
+        echo "========================================"
+        echo " Linux System Monitoring"
+        echo "========================================"
+        echo ""
+        echo "Current Thresholds:"
+        echo "  CPU: ${CPU_THRESHOLD}%"
+        echo "  Memory: ${MEMORY_THRESHOLD}%"
+        echo "  Disk: ${DISK_THRESHOLD}%"
+        echo ""
+        echo "1. Run single system check"
+        echo "2. Start continuous monitoring (60 sec interval)"
+        echo "3. Check CPU only"
+        echo "4. Check memory only"
+        echo "5. Check disk only"
+        echo "6. View alert log"
+        echo "7. Show system information"
+        echo ""
+        echo "0. Exit to main menu"
+        echo ""
+        read -p "Select an option: " choice
+        
+        case $choice in
+            1)
+                # Single check
+                clear
+                generate_report
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            2)
+                # Continuous monitoring
+                clear
+                print_info "Starting continuous monitoring..."
+                print_warning "Press Ctrl+C to stop"
+                echo ""
+                sleep 2
+                
+                while true; do
+                    generate_report
+                    echo ""
+                    print_info "Waiting 60 seconds..."
+                    echo ""
+                    sleep 60
+                done
+                ;;
+                
+            3)
+                # CPU only
+                clear
+                echo "========================================"
+                echo " CPU Check"
+                echo "========================================"
+                echo ""
+                
+                show_system_info
+                echo ""
+                check_cpu_usage
+                echo ""
+                get_top_processes
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            4)
+                # Memory only
+                clear
+                echo "========================================"
+                echo " Memory Check"
+                echo "========================================"
+                echo ""
+                
+                check_memory_usage
+                echo ""
+                
+                print_info "Memory details:"
+                free -h
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            5)
+                # Disk only
+                clear
+                echo "========================================"
+                echo " Disk Check"
+                echo "========================================"
+                echo ""
+                
+                check_disk_usage
+                echo ""
+                
+                print_info "Detailed disk usage:"
+                df -h | grep -vE '^Filesystem|tmpfs|cdrom|loop'
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            6)
+                # View alert log
+                clear
+                echo "========================================"
+                echo " Alert Log (Last 20 entries)"
+                echo "========================================"
+                echo ""
+                
+                if [ -f "$ALERT_LOG" ]; then
+                    tail -20 "$ALERT_LOG"
+                else
+                    print_info "No alerts logged yet"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            7)
+                # System info
+                clear
+                echo "========================================"
+                echo " System Information"
+                echo "========================================"
+                echo ""
+                
+                show_system_info
+                echo ""
+                check_load_average
+                echo ""
+                get_top_processes
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            0)
+                print_success "Returning to main menu..."
+                break
+                ;;
+                
+            *)
+                print_error "Invalid option"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+#******************************************************************************
 # Main - Controller
 #******************************************************************************
 
 print_header "System Monitoring Script v1.0"
 
-# Parse arguments
-CONTINUOUS=false
+# Check if running with arguments (command-line mode)
+if [ $# -gt 0 ]; then
+    # Command-line mode (original functionality)
+    CONTINUOUS=false
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --cpu-threshold)
-            CPU_THRESHOLD="$2"
-            shift 2
-            ;;
-        --mem-threshold)
-            MEMORY_THRESHOLD="$2"
-            shift 2
-            ;;
-        --disk-threshold)
-            DISK_THRESHOLD="$2"
-            shift 2
-            ;;
-        --continuous)
-            CONTINUOUS=true
-            shift
-            ;;
-        -h|--help)
-            show_usage
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            show_usage
-            exit 1
-            ;;
-    esac
-done
-
-check_root
-
-# Configuration summary
-echo "Configuration:"
-echo "  CPU threshold: ${CPU_THRESHOLD}%"
-echo "  Memory threshold: ${MEMORY_THRESHOLD}%"
-echo "  Disk threshold: ${DISK_THRESHOLD}%"
-echo "  Alert log: $ALERT_LOG"
-echo ""
-
-#Long term monitoring until stopped
-if [ "$CONTINUOUS" = true ]; then
-    print_info "Running in continuous mode (Ctrl+C to stop)..."
-    echo ""
-    
-    while true; do
-        generate_report
-        echo ""
-        print_info "Waiting 60 seconds..."
-        echo ""
-        sleep 60
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --cpu-threshold)
+                CPU_THRESHOLD="$2"
+                shift 2
+                ;;
+            --mem-threshold)
+                MEMORY_THRESHOLD="$2"
+                shift 2
+                ;;
+            --disk-threshold)
+                DISK_THRESHOLD="$2"
+                shift 2
+                ;;
+            --continuous)
+                CONTINUOUS=true
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_usage
+                exit 1
+                ;;
+        esac
     done
-else
-    generate_report
-fi
 
-exit 0
+    check_root
+
+    # Configuration summary
+    echo "Configuration:"
+    echo "  CPU threshold: ${CPU_THRESHOLD}%"
+    echo "  Memory threshold: ${MEMORY_THRESHOLD}%"
+    echo "  Disk threshold: ${DISK_THRESHOLD}%"
+    echo "  Alert log: $ALERT_LOG"
+    echo ""
+
+    # Long term monitoring until stopped
+    if [ "$CONTINUOUS" = true ]; then
+        print_info "Running in continuous mode (Ctrl+C to stop)..."
+        echo ""
+        
+        while true; do
+            generate_report
+            echo ""
+            print_info "Waiting 60 seconds..."
+            echo ""
+            sleep 60
+        done
+    else
+        generate_report
+    fi
+
+    exit 0
+else
+    # Interactive mode (no arguments provided)
+    check_root
+    interactive_menu
+    exit 0
+fi
