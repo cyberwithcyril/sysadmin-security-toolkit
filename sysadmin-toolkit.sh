@@ -203,9 +203,9 @@ run_linux_backup() {
     echo -e "${CYAN}  Linux Backup Automation${NC}"
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
+    echo "Launching backup script..."
+    cd "$SCRIPT_DIR"
     sudo "$LINUX_BIN/backup_files.sh"
-    echo ""
-    read -p "Press Enter..."
 }
 
 run_linux_log_rotation() {
