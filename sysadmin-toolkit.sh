@@ -214,9 +214,9 @@ run_linux_log_rotation() {
     echo -e "${CYAN}  Linux Log Rotation${NC}"
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
+    echo "Launching log rotation script..."
+    cd "$SCRIPT_DIR"
     sudo "$LINUX_BIN/rotate_logs.sh"
-    echo ""
-    read -p "Press Enter..."
 }
 
 run_linux_monitoring() {
@@ -225,9 +225,9 @@ run_linux_monitoring() {
     echo -e "${CYAN}  Linux System Monitoring${NC}"
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
+    echo "Launching monitoring script..."
+    cd "$SCRIPT_DIR"
     sudo "$LINUX_BIN/monitor_system.sh"
-    echo ""
-    read -p "Press Enter..."
 }
 
 run_linux_user_management() {
