@@ -279,12 +279,8 @@ function Get-BackupList {
 }
 
 #*******************************************************************************
-# Main Script - Controller
+# Main Script - Interactive Menu
 #*******************************************************************************
-
-Write-Host "`n=========================================" -ForegroundColor Cyan
-Write-Host " Windows Backup Script v1.0" -ForegroundColor Cyan
-Write-Host "=========================================" -ForegroundColor Cyan
 
 # Check administrator rights
 if (-not (Test-Administrator)) {
@@ -292,30 +288,129 @@ if (-not (Test-Administrator)) {
     exit 1
 }
 
-Write-Host "[SUCCESS] Running with Administrator privileges" -ForegroundColor Green
-
-# Configuration summary
-Write-Host "`nConfiguration:" -ForegroundColor Cyan
-Write-Host "  Source: $BackupSource" -ForegroundColor White
-Write-Host "  Destination: $BackupDest" -ForegroundColor White
-Write-Host "  Retention: $RetentionDays days" -ForegroundColor White
-
-# Check disk space
-if (-not (Test-DiskSpace -Path $BackupDest)) {
-    Write-Host "[WARNING] Low disk space!" -ForegroundColor Yellow
-}
-
-# Create backup
-if (New-CompressedBackup -Source $BackupSource -Destination $BackupDest) {
-
-# Rotate old backups
-    Remove-OldBackups -Path $BackupDest -RetentionDays $RetentionDays
-
-# Show current backups
-    Get-BackupList -Path $BackupDest
+# Main menu loop
+while ($true) {
+    Write-Host "`n=========================================" -ForegroundColor Cyan
+    Write-Host " Windows Backup Script v1.0" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Configuration:" -ForegroundColor Yellow
+    Write-Host "  Source: $BackupSource" -ForegroundColor White
+    Write-Host "  Destination: $BackupDest" -ForegroundColor White
+    Write-Host "  Retention: $RetentionDays days" -ForegroundColor White
+    Write-Host ""
+    Write-Host "1. Create backup now" -ForegroundColor Yellow
+    Write-Host "2. List current backups" -ForegroundColor Yellow
+    Write-Host "3. Check disk space" -ForegroundColor Yellow
+    Write-Host "4. Remove old backups" -ForegroundColor Yellow
+    Write-Host "5. Custom backup (choose source)" -ForegroundColor Yellow
+    Write-Host "6. Full backup cycle (backup + rotate)" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "0. Exit to main menu" -ForegroundColor Red
+    Write-Host ""
     
-    Write-Host "`n[SUCCESS] Backup completed successfully!" -ForegroundColor Green
-} else {
-    Write-Host "`n[ERROR] Backup failed!" -ForegroundColor Red
-    exit 1
+    $choice = Read-Host "Select an option"
+    
+    switch ($choice) {
+        "1" {
+            #Create backup now
+            Clear-Host
+            Write-Host "`n[INFO] Starting backup..." -ForegroundColor Cyan
+            
+            if (Test-DiskSpace -Path $BackupDest) {
+                if (New-CompressedBackup -Source $BackupSource -Destination $BackupDest) {
+                    Write-Host "`n[SUCCESS] Backup completed!" -ForegroundColor Green
+                } else {
+                    Write-Host "`n[ERROR] Backup failed!" -ForegroundColor Red
+                }
+            } else {
+                Write-Host "`n[WARNING] Insufficient disk space!" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "2" {
+            #List current backups
+            Clear-Host
+            Get-BackupList -Path $BackupDest
+            Read-Host "`nPress Enter to continue"
+        }
+        "3" {
+            #Check disk space
+            Clear-Host
+            Test-DiskSpace -Path $BackupDest
+            Read-Host "`nPress Enter to continue"
+        }
+        "4" {
+            #Remove old backups
+            Clear-Host
+            Write-Host "`n[INFO] Checking for old backups..." -ForegroundColor Cyan
+            Remove-OldBackups -Path $BackupDest -RetentionDays $RetentionDays
+            Read-Host "`nPress Enter to continue"
+        }
+        "5" {
+            #Custom backup
+            Clear-Host
+            Write-Host "`n[INFO] Custom Backup" -ForegroundColor Cyan
+            $customSource = Read-Host "`nEnter source path (e.g., C:\Users\Documents)"
+            
+            if (Test-Path $customSource) {
+                Write-Host "`n[INFO] Source: $customSource" -ForegroundColor Cyan
+                $confirm = Read-Host "Proceed with backup? (yes/no)"
+                
+                if ($confirm -eq "yes") {
+                    if (Test-DiskSpace -Path $BackupDest) {
+                        if (New-CompressedBackup -Source $customSource -Destination $BackupDest) {
+                            Write-Host "`n[SUCCESS] Custom backup completed!" -ForegroundColor Green
+                        } else {
+                            Write-Host "`n[ERROR] Backup failed!" -ForegroundColor Red
+                        }
+                    } else {
+                        Write-Host "`n[WARNING] Insufficient disk space!" -ForegroundColor Red
+                    }
+                } else {
+                    Write-Host "[INFO] Backup cancelled" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "[ERROR] Source path does not exist!" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "6" {
+            #Full backup cycle
+            Clear-Host
+            Write-Host "`n=========================================" -ForegroundColor Cyan
+            Write-Host " Full Backup Cycle" -ForegroundColor Cyan
+            Write-Host "=========================================" -ForegroundColor Cyan
+            
+            #Check disk space
+            if (Test-DiskSpace -Path $BackupDest) {
+                #Create backup
+                if (New-CompressedBackup -Source $BackupSource -Destination $BackupDest) {
+                    #Rotate old backups
+                    Remove-OldBackups -Path $BackupDest -RetentionDays $RetentionDays
+                    
+                    #Show current backups
+                    Get-BackupList -Path $BackupDest
+                    
+                    Write-Host "`n[SUCCESS] Full backup cycle completed!" -ForegroundColor Green
+                } else {
+                    Write-Host "`n[ERROR] Backup failed!" -ForegroundColor Red
+                }
+            } else {
+                Write-Host "`n[WARNING] Insufficient disk space - backup cancelled!" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "0" {
+            Write-Host "`nReturning to main menu..." -ForegroundColor Green
+            exit 0
+        }
+        default {
+            Write-Host "`n[ERROR] Invalid option" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    }
 }
