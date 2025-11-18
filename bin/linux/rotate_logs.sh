@@ -272,87 +272,272 @@ USAGE
 }
 
 #******************************************************************************
+# Function: interactive_menu
+#******************************************************************************
+# Interactive menu for log rotation operations
+interactive_menu() {
+    while true; do
+        echo ""
+        echo "========================================"
+        echo " Linux Log Rotation"
+        echo "========================================"
+        echo ""
+        echo "Configuration:"
+        echo "  Directories: ${LOG_DIRS[*]}"
+        echo "  Max size: ${MAX_SIZE_MB}MB"
+        echo "  Retention: ${RETENTION_DAYS} days"
+        echo "  Compress after: ${COMPRESS_AFTER_DAYS} days"
+        echo ""
+        echo "1. Run full log rotation"
+        echo "2. Scan for large logs"
+        echo "3. Scan for old logs"
+        echo "4. Show log statistics"
+        echo "5. Compress old logs only"
+        echo "6. Delete old logs only"
+        echo ""
+        echo "0. Exit to main menu"
+        echo ""
+        read -p "Select an option: " choice
+        
+        case $choice in
+            1)
+                # Full rotation
+                clear
+                echo "========================================"
+                echo " Full Log Rotation"
+                echo "========================================"
+                echo ""
+                
+                show_log_stats
+                echo ""
+                find_large_logs "$MAX_SIZE_MB"
+                echo ""
+                find_old_logs "$RETENTION_DAYS"
+                echo ""
+                rotate_logs
+                
+                echo ""
+                print_success "Log rotation completed!"
+                read -p "Press Enter to continue..."
+                ;;
+                
+            2)
+                # Scan for large logs
+                clear
+                echo "========================================"
+                echo " Scan for Large Logs"
+                echo "========================================"
+                echo ""
+                
+                find_large_logs "$MAX_SIZE_MB"
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            3)
+                # Scan for old logs
+                clear
+                echo "========================================"
+                echo " Scan for Old Logs"
+                echo "========================================"
+                echo ""
+                
+                find_old_logs "$RETENTION_DAYS"
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            4)
+                # Show statistics
+                clear
+                echo "========================================"
+                echo " Log Directory Statistics"
+                echo "========================================"
+                echo ""
+                
+                show_log_stats
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            5)
+                # Compress only
+                clear
+                echo "========================================"
+                echo " Compress Old Logs"
+                echo "========================================"
+                echo ""
+                
+                print_info "Compressing logs older than $COMPRESS_AFTER_DAYS days..."
+                echo ""
+                
+                local compressed_count=0
+                
+                while IFS= read -r file; do
+                    if [ -f "$file" ] && [[ "$file" != *.gz ]]; then
+                        if compress_log "$file"; then
+                            ((compressed_count++))
+                        fi
+                    fi
+                done < <(find "${LOG_DIRS[@]}" -type f -name "*.log.*" -mtime +$COMPRESS_AFTER_DAYS ! -name "*.gz" 2>/dev/null)
+                
+                echo ""
+                if [ $compressed_count -eq 0 ]; then
+                    print_info "No logs to compress"
+                else
+                    print_success "Compressed $compressed_count log file(s)"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            6)
+                # Delete only
+                clear
+                echo "========================================"
+                echo " Delete Old Logs"
+                echo "========================================"
+                echo ""
+                
+                print_warning "This will delete logs older than $RETENTION_DAYS days!"
+                read -p "Are you sure? (yes/no): " confirm
+                
+                if [ "$confirm" = "yes" ]; then
+                    echo ""
+                    print_info "Deleting old logs..."
+                    echo ""
+                    
+                    local deleted_count=0
+                    
+                    while IFS= read -r file; do
+                        if [ -f "$file" ]; then
+                            if delete_old_log "$file"; then
+                                ((deleted_count++))
+                            fi
+                        fi
+                    done < <(find "${LOG_DIRS[@]}" -type f \( -name "*.log.*" -o -name "*.gz" \) -mtime +$RETENTION_DAYS 2>/dev/null)
+                    
+                    echo ""
+                    if [ $deleted_count -eq 0 ]; then
+                        print_info "No old logs to delete"
+                    else
+                        print_success "Deleted $deleted_count log file(s)"
+                    fi
+                else
+                    print_info "Operation cancelled"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            0)
+                print_success "Returning to main menu..."
+                break
+                ;;
+                
+            *)
+                print_error "Invalid option"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+#******************************************************************************
 # Main - Controller for Log Rotation Script
 #******************************************************************************
 
 print_header "Log Rotation Script v1.0"
 
-# Parse arguments
-SCAN_ONLY=false
-STATS_ONLY=false
+# Check if running with arguments (command-line mode)
+if [ $# -gt 0 ]; then
+    # Command-line mode (original functionality)
+    SCAN_ONLY=false
+    STATS_ONLY=false
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -d|--dirs)
-            IFS=',' read -ra LOG_DIRS <<< "$2"
-            shift 2
-            ;;
-        -s|--size)
-            MAX_SIZE_MB="$2"
-            shift 2
-            ;;
-        -r|--retention)
-            RETENTION_DAYS="$2"
-            shift 2
-            ;;
-        -c|--compress)
-            COMPRESS_AFTER_DAYS="$2"
-            shift 2
-            ;;
-        --scan)
-            SCAN_ONLY=true
-            shift
-            ;;
-        --stats)
-            STATS_ONLY=true
-            shift
-            ;;
-        -h|--help)
-            show_usage
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            show_usage
-            exit 1
-            ;;
-    esac
-done
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -d|--dirs)
+                IFS=',' read -ra LOG_DIRS <<< "$2"
+                shift 2
+                ;;
+            -s|--size)
+                MAX_SIZE_MB="$2"
+                shift 2
+                ;;
+            -r|--retention)
+                RETENTION_DAYS="$2"
+                shift 2
+                ;;
+            -c|--compress)
+                COMPRESS_AFTER_DAYS="$2"
+                shift 2
+                ;;
+            --scan)
+                SCAN_ONLY=true
+                shift
+                ;;
+            --stats)
+                STATS_ONLY=true
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
 
-check_root
+    check_root
 
-# Configuration summary
-echo "Configuration:"
-echo "  Directories: ${LOG_DIRS[*]}"
-echo "  Max size: ${MAX_SIZE_MB}MB"
-echo "  Retention: ${RETENTION_DAYS} days"
-echo "  Compress after: ${COMPRESS_AFTER_DAYS} days"
-echo ""
+    # Configuration summary
+    echo "Configuration:"
+    echo "  Directories: ${LOG_DIRS[*]}"
+    echo "  Max size: ${MAX_SIZE_MB}MB"
+    echo "  Retention: ${RETENTION_DAYS} days"
+    echo "  Compress after: ${COMPRESS_AFTER_DAYS} days"
+    echo ""
 
-# Stats only mode
-if [ "$STATS_ONLY" = true ]; then
+    # Stats only mode
+    if [ "$STATS_ONLY" = true ]; then
+        show_log_stats
+        exit 0
+    fi
+
+    # Scan mode
+    if [ "$SCAN_ONLY" = true ]; then
+        find_large_logs "$MAX_SIZE_MB"
+        echo ""
+        find_old_logs "$RETENTION_DAYS"
+        echo ""
+        show_log_stats
+        exit 0
+    fi
+
+    # Full rotation
     show_log_stats
-    exit 0
-fi
-
-# Scan mode
-if [ "$SCAN_ONLY" = true ]; then
+    echo ""
     find_large_logs "$MAX_SIZE_MB"
     echo ""
     find_old_logs "$RETENTION_DAYS"
     echo ""
-    show_log_stats
+    rotate_logs
+
+    print_success "Log rotation completed!"
+    exit 0
+else
+    # Interactive mode (no arguments provided)
+    check_root
+    interactive_menu
     exit 0
 fi
-
-# Full rotation
-show_log_stats
-echo ""
-find_large_logs "$MAX_SIZE_MB"
-echo ""
-find_old_logs "$RETENTION_DAYS"
-echo ""
-rotate_logs
-
-print_success "Log rotation completed!"
-exit 0
