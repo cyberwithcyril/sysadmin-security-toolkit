@@ -420,9 +420,9 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-            0)
+              0)
                 print_success "Returning to main menu..."
-                break
+                return 0
                 ;;
                 
             *)
