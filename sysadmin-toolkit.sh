@@ -269,8 +269,8 @@ run_windows_user_management() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". './bin/windows/New-BulkUsers.ps1'"
-    read -p "Press Enter..."
+    cd "$SCRIPT_DIR"
+    powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/New-BulkUsers.ps1'"
 }
 
 run_windows_backup() {
@@ -280,8 +280,8 @@ run_windows_backup() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". './bin/windows/Backup-Files.ps1'"
-    read -p "Press Enter..."
+    cd "$SCRIPT_DIR"
+    powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Backup-Files.ps1'"
 }
 
 run_windows_eventlog() {
@@ -291,8 +291,8 @@ run_windows_eventlog() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". './bin/windows/Manage-EventLogs.ps1'"
-    read -p "Press Enter..."
+    cd "$SCRIPT_DIR"
+    powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Manage-EventLogs.ps1'"
 }
 
 run_windows_monitoring() {
@@ -302,8 +302,8 @@ run_windows_monitoring() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". './bin/windows/Monitor-System.ps1'"
-    read -p "Press Enter..."
+    cd "$SCRIPT_DIR"
+    powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Monitor-System.ps1'"
 }
 
 run_windows_service_management() {
@@ -313,11 +313,9 @@ run_windows_service_management() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". './bin/windows/Manage-Service.ps1'"
-
-    read -p "Press Enter..."
+    cd "$SCRIPT_DIR"
+    powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Manage-Service.ps1'"
 }
-
 
 
 show_about() {
