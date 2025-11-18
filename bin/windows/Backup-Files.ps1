@@ -91,9 +91,17 @@ function Format-FileSize {
     param([double]$SizeMB)
     
     if ($SizeMB -ge 1024) {
+        # Show as GB for files > 1024 MB
         return "{0:N2} GB" -f ($SizeMB / 1024)
     }
-    return "{0:N2} MB" -f $SizeMB
+    elseif ($SizeMB -ge 1) {
+        # Show as MB for files >= 1 MB
+        return "{0:N2} MB" -f $SizeMB
+    }
+    else {
+        # Show as KB for files < 1 MB
+        return "{0:N2} KB" -f ($SizeMB * 1024)
+    }
 }
 
 #******************************************************************************
