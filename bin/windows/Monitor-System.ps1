@@ -283,15 +283,11 @@ function Start-SystemMonitor {
     } while ($Continuous)
 }
 
-################################################################################
-# Main Script - Controller
-################################################################################
+#*******************************************************************************
+# Main Script - Interactive Menu
+#*******************************************************************************
 
-Write-Host "`n=========================================" -ForegroundColor Cyan
-Write-Host " Windows System Monitoring v1.0" -ForegroundColor Cyan
-Write-Host "=========================================" -ForegroundColor Cyan
-
-# Check administrator
+# Check Administrator
 if (-not (Test-Administrator)) {
     Write-Host "[ERROR] This script must be run as Administrator" -ForegroundColor Red
     exit 1
@@ -299,25 +295,72 @@ if (-not (Test-Administrator)) {
 
 Write-Host "[SUCCESS] Running with Administrator privileges" -ForegroundColor Green
 
-# Configuration - Diplays Set Threshold
-Write-Host "`nConfiguration:" -ForegroundColor Cyan
-Write-Host "  CPU threshold: $CPUThreshold%" -ForegroundColor White
-Write-Host "  Memory threshold: $MemoryThreshold%" -ForegroundColor White
-Write-Host "  Disk threshold: $DiskThreshold%" -ForegroundColor White
-Write-Host "  Alert log: $AlertLog" -ForegroundColor White
-
-# Parse command line arguments
-$ContinuousMode = $false
-$Interval = 60
-
-# Check for -Continuous switch
-if ($args -contains "-Continuous") {
-    $ContinuousMode = $true
-    $IntervalIndex = [array]::IndexOf($args, "-Interval")
-    if ($IntervalIndex -ge 0 -and $IntervalIndex + 1 -lt $args.Count) {
-        $Interval = [int]$args[$IntervalIndex + 1]
+# Main menu loop
+while ($true) {
+    Write-Host "`n=========================================" -ForegroundColor Cyan
+    Write-Host " Windows System Monitoring v1.0" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Current Thresholds:" -ForegroundColor Yellow
+    Write-Host "  CPU: $CPUThreshold%" -ForegroundColor White
+    Write-Host "  Memory: $MemoryThreshold%" -ForegroundColor White
+    Write-Host "  Disk: $DiskThreshold%" -ForegroundColor White
+    Write-Host ""
+    Write-Host "1. Run single system check" -ForegroundColor Yellow
+    Write-Host "2. Start continuous monitoring (60 sec interval)" -ForegroundColor Yellow
+    Write-Host "3. View alert log" -ForegroundColor Yellow
+    Write-Host "4. View audit log" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "0. Exit to main menu" -ForegroundColor Red
+    Write-Host ""
+    
+    $choice = Read-Host "Select an option"
+    
+    switch ($choice) {
+        "1" {
+            Clear-Host
+            Start-SystemMonitor -Continuous:$false
+            Read-Host "`nPress Enter to continue"
+        }
+        "2" {
+            Clear-Host
+            Write-Host "[INFO] Starting continuous monitoring..." -ForegroundColor Cyan
+            Write-Host "[INFO] Press Ctrl+C to stop" -ForegroundColor Yellow
+            Write-Host ""
+            Start-Sleep -Seconds 2
+            Start-SystemMonitor -Continuous -IntervalSeconds 60
+        }
+        "3" {
+            Clear-Host
+            Write-Host "`n=========================================" -ForegroundColor Cyan
+            Write-Host " Alert Log" -ForegroundColor Cyan
+            Write-Host "=========================================" -ForegroundColor Cyan
+            if (Test-Path $AlertLog) {
+                Get-Content $AlertLog -Tail 20
+            } else {
+                Write-Host "[INFO] No alerts logged yet" -ForegroundColor Yellow
+            }
+            Read-Host "`nPress Enter to continue"
+        }
+        "4" {
+            Clear-Host
+            Write-Host "`n=========================================" -ForegroundColor Cyan
+            Write-Host " Audit Log" -ForegroundColor Cyan
+            Write-Host "=========================================" -ForegroundColor Cyan
+            if (Test-Path $AuditLog) {
+                Get-Content $AuditLog -Tail 20
+            } else {
+                Write-Host "[INFO] No audit entries yet" -ForegroundColor Yellow
+            }
+            Read-Host "`nPress Enter to continue"
+        }
+        "0" {
+            Write-Host "`nReturning to main menu..." -ForegroundColor Green
+            exit 0
+        }
+        default {
+            Write-Host "`n[ERROR] Invalid option" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
     }
 }
-
-# Run monitoring
-Start-SystemMonitor -Continuous:$ContinuousMode -IntervalSeconds $Interval
