@@ -314,7 +314,7 @@ function Remove-OldArchives {
     Write-AuditLog -Action "EVENTLOG_CLEANUP" -Result "SUCCESS" -Details "deleted=$DeletedCount size_freed=${TotalSizeMB}MB retention=${RetentionDays}d"
 }
 
-#*******************************************************************************
+#******************************************************************************
 # Main Script - Interactive Menu
 #*******************************************************************************
 
@@ -350,11 +350,13 @@ while ($true) {
     switch ($choice) {
         "1" {
             #Show current status of all logs
+            Clear-Host
             Get-EventLogInfo
             Read-Host "`nPress Enter to continue"
         }
         "2" {
             #View log summary
+            Clear-Host
             Write-Host "`nSelect log:" -ForegroundColor Cyan
             Write-Host "  1. System"
             Write-Host "  2. Application"
@@ -376,4 +378,77 @@ while ($true) {
         }
         "3" {
             #Archive event log
-            Write-Host "`nSelect log to archive:" -ForegroundColor
+            Clear-Host
+            Write-Host "`nSelect log to archive:" -ForegroundColor Cyan
+            Write-Host "  1. System"
+            Write-Host "  2. Application"
+            Write-Host "  3. Security"
+            $logChoice = Read-Host "`nEnter choice (1-3)"
+            
+            $logName = switch ($logChoice) {
+                "1" { "System" }
+                "2" { "Application" }
+                "3" { "Security" }
+                default { "System" }
+            }
+            
+            Export-EventLogArchive -LogName $logName -ArchivePath $ArchivePath
+            Read-Host "`nPress Enter to continue"
+        }
+        "4" {
+            #Clear event log with archive
+            Clear-Host
+            Write-Host "`nWARNING: This will clear the event log!" -ForegroundColor Red
+            Write-Host "An archive will be created first." -ForegroundColor Yellow
+            Write-Host ""
+            Write-Host "Select log to clear:" -ForegroundColor Cyan
+            Write-Host "  1. System"
+            Write-Host "  2. Application"
+            Write-Host "  3. Security"
+            $logChoice = Read-Host "`nEnter choice (1-3)"
+            
+            $logName = switch ($logChoice) {
+                "1" { "System" }
+                "2" { "Application" }
+                "3" { "Security" }
+                default { "System" }
+            }
+            
+            $confirm = Read-Host "`nAre you sure you want to clear $logName log? (yes/no)"
+            if ($confirm -eq "yes") {
+                Clear-EventLogSafe -LogName $logName -ArchiveFirst
+            } else {
+                Write-Host "[INFO] Operation cancelled" -ForegroundColor Yellow
+            }
+            Read-Host "`nPress Enter to continue"
+        }
+        "5" {
+            #Remove old archives
+            Clear-Host
+            Remove-OldArchives -ArchivePath $ArchivePath -RetentionDays $RetentionDays
+            Read-Host "`nPress Enter to continue"
+        }
+        "6" {
+            #Run full analysis
+            Clear-Host
+            Write-Host "`n=========================================" -ForegroundColor Cyan
+            Write-Host " Full System Analysis" -ForegroundColor Cyan
+            Write-Host "=========================================" -ForegroundColor Cyan
+            
+            Get-EventLogInfo
+            Get-EventLogSummary -LogName "System" -Hours 24
+            Get-EventLogSummary -LogName "Application" -Hours 24
+            Remove-OldArchives -ArchivePath $ArchivePath -RetentionDays $RetentionDays
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "0" {
+            Write-Host "`nReturning to main menu..." -ForegroundColor Green
+            exit 0
+        }
+        default {
+            Write-Host "`n[ERROR] Invalid option" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    }
+}
