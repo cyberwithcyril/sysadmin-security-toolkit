@@ -83,24 +83,35 @@ function Test-Administrator {
 #*******************************************************************************
 # Function: Get-CPUUsage
 #*******************************************************************************
-#Measures CPU-Usafe and Alerts if Too High
+#Measures CPU-Usage and Alerts if Too High
 function Get-CPUUsage {
     Write-Host "`n[INFO] Checking CPU usage..." -ForegroundColor Cyan
     
+    try {
 #Get CPU usage using PS[Get-Counter] Windows Performance Counters - Takes 2 Samples
 #Takes Both Samples of CPU Usage and Gets the Average
-    $CPUUsage = (Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 1 -MaxSamples 2 | 
-                 Select-Object -ExpandProperty CounterSamples | 
-                 Measure-Object -Property CookedValue -Average).Average
-    
-    $CPUUsage = [math]::Round($CPUUsage, 1)
+        $CPUUsage = (Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 1 -MaxSamples 2 -ErrorAction Stop | 
+                     Select-Object -ExpandProperty CounterSamples | 
+                     Measure-Object -Property CookedValue -Average).Average
+        
+        $CPUUsage = [math]::Round($CPUUsage, 1)
+    }
+    catch {
+#Fallback: Use WMI if Performance Counter fails (more reliable on some systems)
+        Write-Host "[INFO] Using alternate CPU measurement method..." -ForegroundColor Yellow
+        
+        $CpuLoad = Get-CimInstance -ClassName Win32_Processor | 
+                   Measure-Object -Property LoadPercentage -Average | 
+                   Select-Object -ExpandProperty Average
+        
+        $CPUUsage = [math]::Round($CpuLoad, 1)
+    }
     
     Write-Host "  Current CPU usage: $CPUUsage%" -ForegroundColor White
 
 #Checks & Compares to the Set CPU Threshold 
 #If Current CPU Usage is greater than CPU Threshold - 'CPU High'   
     if ($CPUUsage -ge $CPUThreshold) {
-       
 #Sends Warning to User - Logs Action
         Write-Host "[WARNING] CPU usage above threshold ($CPUThreshold%)" -ForegroundColor Red
         Write-Alert -AlertType "CPU_HIGH" -Details "usage=${CPUUsage}% threshold=${CPUThreshold}%"
