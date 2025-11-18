@@ -174,7 +174,11 @@ function New-CompressedBackup {
 #Get info about the zip file in bytes
         $BackupSize = (Get-Item $BackupPath).Length / 1MB
 #Calculate space saved
-        $CompressionRatio = [math]::Round((1 - ($BackupSize / $SourceSize)) * 100, 1)
+        if ($SourceSize -gt 0) {
+            $CompressionRatio = [math]::Round((1 - ($BackupSize / $SourceSize)) * 100, 1)
+        } else {
+            $CompressionRatio = 0
+        }
 
 #Success Logs       
         Write-Host "[SUCCESS] Backup size: $(Format-FileSize $BackupSize)" -ForegroundColor Green
