@@ -14,7 +14,7 @@
 #Requires -RunAsAdministrator
 
 # Configuration
-$BackupSource = "C:\Users" #What to Backup
+$BackupSource = "C:\Users\Administrator\Documents" #What to Backup
 $BackupDest = "C:\Backups" #Where to Save Backups
 $RetentionDays = 7 #How Long to Keep Backups
 $AuditLog = "C:\Logs\SysAdminToolkit\audit.log" #Path for Log File
