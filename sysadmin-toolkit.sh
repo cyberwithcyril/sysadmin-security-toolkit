@@ -269,7 +269,7 @@ run_windows_user_management() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/New-BulkUsers.ps1"
+    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". '$WINDOWS_BIN/New-BulkUsers.ps1'"
     read -p "Press Enter..."
 }
 
@@ -280,7 +280,7 @@ run_windows_backup() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Backup-Files.ps1"
+    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". '$WINDOWS_BIN/Backup-Files.ps1'"
     read -p "Press Enter..."
 }
 
@@ -291,7 +291,7 @@ run_windows_eventlog() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Manage-EventLogs.ps1"
+    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". '$WINDOWS_BIN/Manage-EventLogs.ps1'"
     read -p "Press Enter..."
 }
 
@@ -302,7 +302,7 @@ run_windows_monitoring() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Monitor-System.ps1"
+    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". '$WINDOWS_BIN/Monitor-System.ps1'"
     read -p "Press Enter..."
 }
 
@@ -313,7 +313,8 @@ run_windows_service_management() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "Launching PowerShell script..."
-    powershell.exe -ExecutionPolicy Bypass -File "$WINDOWS_BIN/Manage-Service.ps1"
+    powershell.exe -ExecutionPolicy Bypass -NoExit -Command ". '$WINDOWS_BIN/Manage-Service.ps1'"
+
     read -p "Press Enter..."
 }
 
