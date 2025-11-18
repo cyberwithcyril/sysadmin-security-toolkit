@@ -314,13 +314,9 @@ function Remove-OldArchives {
     Write-AuditLog -Action "EVENTLOG_CLEANUP" -Result "SUCCESS" -Details "deleted=$DeletedCount size_freed=${TotalSizeMB}MB retention=${RetentionDays}d"
 }
 
-################################################################################
-# Main Script - Controller
-################################################################################
-
-Write-Host "`n=========================================" -ForegroundColor Cyan
-Write-Host " Windows Event Log Management v1.0" -ForegroundColor Cyan
-Write-Host "=========================================" -ForegroundColor Cyan
+#*******************************************************************************
+# Main Script - Interactive Menu
+#*******************************************************************************
 
 #Check administrator
 if (-not (Test-Administrator)) {
@@ -328,31 +324,56 @@ if (-not (Test-Administrator)) {
     exit 1
 }
 
-Write-Host "[SUCCESS] Running with Administrator privileges" -ForegroundColor Green
-
-#Configuration
-Write-Host "`nConfiguration:" -ForegroundColor Cyan
-Write-Host "  Archive Path: $ArchivePath" -ForegroundColor White
-Write-Host "  Retention: $RetentionDays days" -ForegroundColor White
-Write-Host "  Max Log Size: $MaxLogSizeMB MB" -ForegroundColor White
-
-#Show current status
-Get-EventLogInfo
-
-#Show recent summaries
-Get-EventLogSummary -LogName "System" -Hours 24
-Get-EventLogSummary -LogName "Application" -Hours 24
-
-#Check for old archives
-Remove-OldArchives -ArchivePath $ArchivePath -RetentionDays $RetentionDays
-
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host " Available Commands" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Archive log:" -ForegroundColor Yellow
-Write-Host "  Export-EventLogArchive -LogName 'System' -ArchivePath 'C:\Logs\EventLogArchives'" -ForegroundColor Gray
-Write-Host "`nClear log (with archive):" -ForegroundColor Yellow
-Write-Host "  Clear-EventLogSafe -LogName 'Application' -ArchiveFirst" -ForegroundColor Gray
-Write-Host "`nGet summary:" -ForegroundColor Yellow
-Write-Host "  Get-EventLogSummary -LogName 'System' -Hours 48" -ForegroundColor Gray
-Write-Host ""
+# Main menu loop
+while ($true) {
+    Write-Host "`n=========================================" -ForegroundColor Cyan
+    Write-Host " Windows Event Log Management v1.0" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "Configuration:" -ForegroundColor Yellow
+    Write-Host "  Archive Path: $ArchivePath" -ForegroundColor White
+    Write-Host "  Retention: $RetentionDays days" -ForegroundColor White
+    Write-Host "  Max Log Size: $MaxLogSizeMB MB" -ForegroundColor White
+    Write-Host ""
+    Write-Host "1. Show event log status" -ForegroundColor Yellow
+    Write-Host "2. View log summary (last 24 hours)" -ForegroundColor Yellow
+    Write-Host "3. Archive event log" -ForegroundColor Yellow
+    Write-Host "4. Clear event log (with archive)" -ForegroundColor Yellow
+    Write-Host "5. Remove old archives" -ForegroundColor Yellow
+    Write-Host "6. Run full analysis" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "0. Exit to main menu" -ForegroundColor Red
+    Write-Host ""
+    
+    $choice = Read-Host "Select an option"
+    
+    switch ($choice) {
+        "1" {
+            #Show current status of all logs
+            Get-EventLogInfo
+            Read-Host "`nPress Enter to continue"
+        }
+        "2" {
+            #View log summary
+            Write-Host "`nSelect log:" -ForegroundColor Cyan
+            Write-Host "  1. System"
+            Write-Host "  2. Application"
+            Write-Host "  3. Security"
+            $logChoice = Read-Host "`nEnter choice (1-3)"
+            
+            $logName = switch ($logChoice) {
+                "1" { "System" }
+                "2" { "Application" }
+                "3" { "Security" }
+                default { "System" }
+            }
+            
+            $hours = Read-Host "`nHours to analyze (default: 24)"
+            if ([string]::IsNullOrWhiteSpace($hours)) { $hours = 24 }
+            
+            Get-EventLogSummary -LogName $logName -Hours $hours
+            Read-Host "`nPress Enter to continue"
+        }
+        "3" {
+            #Archive event log
+            Write-Host "`nSelect log to archive:" -ForegroundColor
