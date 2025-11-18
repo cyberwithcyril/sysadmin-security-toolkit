@@ -234,6 +234,182 @@ Examples:
 
 USAGE
 }
+#******************************************************************************
+# Function: interactive_menu
+#******************************************************************************
+# Interactive menu for service management
+interactive_menu() {
+    while true; do
+        echo ""
+        echo "========================================"
+        echo " Linux Service Management"
+        echo "========================================"
+        echo ""
+        echo "1. List all services"
+        echo "2. Check service status"
+        echo "3. Start a service"
+        echo "4. Stop a service"
+        echo "5. Restart a service"
+        echo "6. Enable service at boot"
+        echo "7. Disable service at boot"
+        echo "8. View service logs"
+        echo ""
+        echo "0. Exit to main menu"
+        echo ""
+        read -p "Select an option: " choice
+        
+        case $choice in
+            1)
+                # List all services
+                clear
+                list_services
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            2)
+                # Check service status
+                clear
+                echo ""
+                read -p "Enter service name (e.g., ssh, nginx): " service_name
+                
+                if [ -z "$service_name" ]; then
+                    print_error "Service name is required"
+                else
+                    echo ""
+                    get_service_status "$service_name"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            3)
+                # Start a service
+                clear
+                echo ""
+                read -p "Enter service name to start: " service_name
+                
+                if [ -z "$service_name" ]; then
+                    print_error "Service name is required"
+                else
+                    echo ""
+                    start_service "$service_name"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            4)
+                # Stop a service
+                clear
+                echo ""
+                print_warning "Stopping a service may affect system functionality!"
+                read -p "Enter service name to stop: " service_name
+                
+                if [ -z "$service_name" ]; then
+                    print_error "Service name is required"
+                else
+                    read -p "Are you sure you want to stop $service_name? (yes/no): " confirm
+                    if [ "$confirm" = "yes" ]; then
+                        echo ""
+                        stop_service "$service_name"
+                    else
+                        print_info "Operation cancelled"
+                    fi
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            5)
+                # Restart a service
+                clear
+                echo ""
+                read -p "Enter service name to restart: " service_name
+                
+                if [ -z "$service_name" ]; then
+                    print_error "Service name is required"
+                else
+                    echo ""
+                    restart_service "$service_name"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            6)
+                # Enable service at boot
+                clear
+                echo ""
+                print_info "This will make the service start automatically at boot"
+                read -p "Enter service name to enable: " service_name
+                
+                if [ -z "$service_name" ]; then
+                    print_error "Service name is required"
+                else
+                    echo ""
+                    enable_service "$service_name"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            7)
+                # Disable service at boot
+                clear
+                echo ""
+                print_info "This will prevent the service from starting at boot"
+                read -p "Enter service name to disable: " service_name
+                
+                if [ -z "$service_name" ]; then
+                    print_error "Service name is required"
+                else
+                    echo ""
+                    disable_service "$service_name"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            8)
+                # View service logs
+                clear
+                echo ""
+                read -p "Enter service name: " service_name
+                
+                if [ -z "$service_name" ]; then
+                    print_error "Service name is required"
+                else
+                    read -p "Number of lines to show (default: 20): " lines
+                    if [ -z "$lines" ]; then
+                        lines=20
+                    fi
+                    echo ""
+                    show_service_logs "$service_name" "$lines"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            0)
+                print_success "Returning to main menu..."
+                return 0
+                ;;
+                
+            *)
+                print_error "Invalid option"
+                sleep 1
+                ;;
+        esac
+    done
+}
 
 #******************************************************************************
 # Main- Controller
@@ -241,80 +417,87 @@ USAGE
 
 print_header "Service Management Script v1.0"
 
-#Validates privileges
+# Validate privileges
 check_root
 
-# Parse arguments
-ACTION="${1:-}"
-SERVICE="${2:-}"
-OPTION="${3:-}"
+# Check if running with arguments (command-line mode)
+if [ $# -gt 0 ]; then
+    # Command-line mode (original functionality)
+    ACTION="${1:-}"
+    SERVICE="${2:-}"
+    OPTION="${3:-}"
 
-#Checks if action is provided
-if [ -z "$ACTION" ]; then
-    print_error "No action specified"
-    show_usage
-    exit 1
-fi
-
-case "$ACTION" in
-    list)
-        list_services
-        ;;
-    status)
-#Checks if service name is provided
-        if [ -z "$SERVICE" ]; then
-            print_error "Service name required"
-            exit 1
-        fi
-        get_service_status "$SERVICE"
-        ;;
-    start)
-        if [ -z "$SERVICE" ]; then
-            print_error "Service name required"
-            exit 1
-        fi
-        start_service "$SERVICE"
-        ;;
-    stop)
-        if [ -z "$SERVICE" ]; then
-            print_error "Service name required"
-            exit 1
-        fi
-        stop_service "$SERVICE"
-        ;;
-    restart)
-        if [ -z "$SERVICE" ]; then
-            print_error "Service name required"
-            exit 1
-        fi
-        restart_service "$SERVICE"
-        ;;
-    enable)
-        if [ -z "$SERVICE" ]; then
-            print_error "Service name required"
-            exit 1
-        fi
-        enable_service "$SERVICE"
-        ;;
-    disable)
-        if [ -z "$SERVICE" ]; then
-            print_error "Service name required"
-            exit 1
-        fi
-        disable_service "$SERVICE"
-        ;;
-    logs)
-        if [ -z "$SERVICE" ]; then
-            print_error "Service name required"
-            exit 1
-        fi
-        show_service_logs "$SERVICE" "${OPTION:-20}"
-        ;;
-    *)
-        print_error "Unknown action: $ACTION"
+    # Check if action is provided
+    if [ -z "$ACTION" ]; then
+        print_error "No action specified"
         show_usage
         exit 1
-        ;;
-esac
+    fi
 
-exit 0
+    case "$ACTION" in
+        list)
+            list_services
+            ;;
+        status)
+            # Check if service name is provided
+            if [ -z "$SERVICE" ]; then
+                print_error "Service name required"
+                exit 1
+            fi
+            get_service_status "$SERVICE"
+            ;;
+        start)
+            if [ -z "$SERVICE" ]; then
+                print_error "Service name required"
+                exit 1
+            fi
+            start_service "$SERVICE"
+            ;;
+        stop)
+            if [ -z "$SERVICE" ]; then
+                print_error "Service name required"
+                exit 1
+            fi
+            stop_service "$SERVICE"
+            ;;
+        restart)
+            if [ -z "$SERVICE" ]; then
+                print_error "Service name required"
+                exit 1
+            fi
+            restart_service "$SERVICE"
+            ;;
+        enable)
+            if [ -z "$SERVICE" ]; then
+                print_error "Service name required"
+                exit 1
+            fi
+            enable_service "$SERVICE"
+            ;;
+        disable)
+            if [ -z "$SERVICE" ]; then
+                print_error "Service name required"
+                exit 1
+            fi
+            disable_service "$SERVICE"
+            ;;
+        logs)
+            if [ -z "$SERVICE" ]; then
+                print_error "Service name required"
+                exit 1
+            fi
+            show_service_logs "$SERVICE" "${OPTION:-20}"
+            ;;
+        *)
+            print_error "Unknown action: $ACTION"
+            show_usage
+            exit 1
+            ;;
+    esac
+
+    exit 0
+else
+    # Interactive mode (no arguments provided)
+    interactive_menu
+    exit 0
+fi
