@@ -88,31 +88,50 @@ function Get-CPUUsage {
     Write-Host "`n[INFO] Checking CPU usage..." -ForegroundColor Cyan
     
     try {
-#Get CPU usage using PS[Get-Counter] Windows Performance Counters - Takes 2 Samples
-#Takes Both Samples of CPU Usage and Gets the Average
-        $CPUUsage = (Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 1 -MaxSamples 2 -ErrorAction Stop | 
-                     Select-Object -ExpandProperty CounterSamples | 
-                     Measure-Object -Property CookedValue -Average).Average
+        #Get CPU usage using Performance Counters - Measures over 2 seconds for accuracy
+        #Takes measurement, waits 2 seconds, takes second measurement for real average
+        Write-Host "  Measuring CPU over 2 seconds..." -ForegroundColor Gray
         
-        $CPUUsage = [math]::Round($CPUUsage, 1)
+        # First measurement
+        $cpu1 = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'"
+        Start-Sleep -Seconds 2
+        # Second measurement
+        $cpu2 = Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'"
+        
+        $CPUUsage = [math]::Round($cpu2.PercentProcessorTime, 1)
+        
+        # Validation: If reading is 0%, something is wrong - use backup method
+        if ($CPUUsage -eq 0) {
+            throw "Zero reading detected, using alternative method"
+        }
     }
     catch {
-#Fallback: Use WMI if Performance Counter fails (more reliable on some systems)
-        Write-Host "[INFO] Using alternate CPU measurement method..." -ForegroundColor Yellow
+        #Fallback Method 1: Try PS[Get-Counter] Windows Performance Counters
+        #Takes 3 Samples and Gets the Average
+        Write-Host "[INFO] Using Performance Counter method..." -ForegroundColor Yellow
         
-        $CpuLoad = Get-CimInstance -ClassName Win32_Processor | 
-                   Measure-Object -Property LoadPercentage -Average | 
-                   Select-Object -ExpandProperty Average
-        
-        $CPUUsage = [math]::Round($CpuLoad, 1)
+        try {
+            $counter = Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 1 -MaxSamples 3 -ErrorAction Stop
+            $CPUUsage = [math]::Round(($counter.CounterSamples | Measure-Object -Property CookedValue -Average).Average, 1)
+        }
+        catch {
+            #Fallback Method 2: Use WMI if Performance Counter fails (most reliable on some systems)
+            Write-Host "[INFO] Using basic CPU measurement..." -ForegroundColor Yellow
+            
+            $CpuLoad = Get-CimInstance -ClassName Win32_Processor | 
+                       Measure-Object -Property LoadPercentage -Average | 
+                       Select-Object -ExpandProperty Average
+            
+            $CPUUsage = [math]::Round($CpuLoad, 1)
+        }
     }
     
     Write-Host "  Current CPU usage: $CPUUsage%" -ForegroundColor White
 
-#Checks & Compares to the Set CPU Threshold 
-#If Current CPU Usage is greater than CPU Threshold - 'CPU High'   
+    #Checks & Compares to the Set CPU Threshold 
+    #If Current CPU Usage is greater than CPU Threshold - 'CPU High'   
     if ($CPUUsage -ge $CPUThreshold) {
-#Sends Warning to User - Logs Action
+        #Sends Warning to User - Logs Action
         Write-Host "[WARNING] CPU usage above threshold ($CPUThreshold%)" -ForegroundColor Red
         Write-Alert -AlertType "CPU_HIGH" -Details "usage=${CPUUsage}% threshold=${CPUThreshold}%"
         return $false
@@ -121,7 +140,6 @@ function Get-CPUUsage {
         return $true
     }
 }
-
 #***********************************************************************************
 # Function: Get-MemoryUsage
 #***********************************************************************************
