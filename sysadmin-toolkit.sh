@@ -1,13 +1,13 @@
 #!/bin/bash
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 # Script Name: sysadmin-toolkit.sh
 # Description: Launcher for SysAdmin Toolkit (Linux & Windows)
 # Author: Cyril Thomas
 # Date: November 5, 2025
 # Version: 1.0
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#********************************************************************************
 
-# Colors [Adds Color to Text Output in Terminal]
+#Color Definitions [ANSI Color Codes]
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -16,15 +16,20 @@ CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
-# Configuration 
-#Defines script location - then Defines subfolder paths for Linux/Windows
+#Configuration 
+#Gets absolute path of script location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" 
 LINUX_BIN="$SCRIPT_DIR/bin/linux"
 WINDOWS_BIN="$SCRIPT_DIR/bin/windows"
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#******************************************************************************
 # Function: detect_os
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
+#Detects which operating system script is running on
+#Returns the system name and matches the outputs against OS Patterns
+#Ubuntu returns Linux --> "Linux"
+#Git Bash on Windows --> 'MINGW64_NT-10.'
+#MacOs --> Darwin
 detect_os() {
     case "$(uname -s)" in
         Linux*)     OS_TYPE="Linux";;
@@ -34,9 +39,9 @@ detect_os() {
     esac
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 # Function: show_banner
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 #Run Screen Banner/Displays Detected OS
 show_banner() {
     clear
@@ -52,7 +57,7 @@ show_banner() {
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
-    # Show detected OS
+    # Show detected OS 
     if [ "$OS_TYPE" == "Linux" ]; then
         echo -e "${GREEN}✓ Detected OS: Linux${NC}"
         echo -e "${GREEN}  All Linux tools available${NC}"
@@ -67,11 +72,11 @@ show_banner() {
     fi
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 # Function: show_menu
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Menu Based On OS - Color Coded - Green if Linux & Blue if Windows - Red if Unsupported
-#If/Else Condiiton -
+#*******************************************************************************
+#Menu Based On OS -Windows/Linux - Displays Tools for Linux and Alerts Windows Tools
+#Not Available - viceversa
 show_menu() {
     echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
     
@@ -118,9 +123,10 @@ show_menu() {
     echo ""
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*********************************************************************************
 # Function: run_linux_tool
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*********************************************************************************
+#Router - Based on tool number calls the appropriate linux script
 run_linux_tool() {
     local tool="$1" #[User Management, Backup Automation, Log Rotation, System Monitoring,
     #Service Management]
@@ -142,9 +148,11 @@ run_linux_tool() {
     esac
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 # Function: run_windows_tool
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
+#Router - Based on tool number calls the appropriate windows script
+
 run_windows_tool() {
     local tool="$1" #[User Management, Backup Automation, Event Log Management, System
     #Monitoring, Service Management]
@@ -166,10 +174,10 @@ run_windows_tool() {
     esac
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 # Linux Tool Functions
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+#*******************************************************************************
+#Linux Functions Menu
 run_linux_user_management() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -241,9 +249,10 @@ run_linux_service_management() {
     sudo "$LINUX_BIN/manage_service.sh"
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 # Windows Tool Functions
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
+#Windows Functions Menu
 
 run_windows_user_management() {
     clear
@@ -299,8 +308,7 @@ run_windows_service_management() {
     cd "$SCRIPT_DIR"
     powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Manage-Service.ps1'"
 }
-
-
+#About Section
 show_about() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -326,27 +334,27 @@ show_about() {
     read -p "Press Enter..."
 }
 
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#*******************************************************************************
 # Main Loop - CORE
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#********************************************************************************
 
-# Detect OS
+# Detect OS to determine which operating system
 detect_os
 
-# Check Git Bash on Windows
+# Check Git Bash on Windows && Powershell Path is found in PATH
 if [ "$OS_TYPE" == "Windows" ] && ! command -v powershell.exe &> /dev/null; then
     echo -e "${RED}ERROR: PowerShell not found!${NC}"
     echo "This toolkit requires PowerShell on Windows"
     exit 1
 fi
 
-# Main menu loop
+# Main menu - Show Until User Chooses to Exit
 while true; do
     show_banner
     show_menu
     
     read -p "Select an option: " choice
-    
+#If user selects 1-5: Execute the appropriate tool   
     case $choice in
         1|2|3|4|5)
             if [ "$OS_TYPE" == "Linux" ]; then
