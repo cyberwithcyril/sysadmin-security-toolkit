@@ -230,17 +230,15 @@ run_linux_monitoring() {
     sudo "$LINUX_BIN/monitor_system.sh"
 }
 
-run_linux_user_management() {
+run_linux_service_management() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
-    echo -e "${CYAN}  Linux User Management${NC}"
+    echo -e "${CYAN}  Linux Service Management${NC}"
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
-    echo "Launching user management script..."
-    
-    # Call script with NO arguments - triggers interactive menu
+    echo "Launching service management script..."
     cd "$SCRIPT_DIR"
-    sudo "$LINUX_BIN/create_user.sh"
+    sudo "$LINUX_BIN/manage_service.sh"
 }
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
