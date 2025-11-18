@@ -188,85 +188,235 @@ USAGE
 }
 
 #*******************************************************************************
+# Function: interactive_menu
+#*******************************************************************************
+# Interactive menu for backup operations
+interactive_menu() {
+    while true; do
+        echo ""
+        echo "========================================"
+        echo " Linux Backup Automation"
+        echo "========================================"
+        echo ""
+        echo "Configuration:"
+        echo "  Source: $BACKUP_SOURCE"
+        echo "  Destination: $BACKUP_DEST"
+        echo "  Retention: $RETENTION_DAYS days"
+        echo ""
+        echo "1. Create backup now"
+        echo "2. List current backups"
+        echo "3. Check disk space"
+        echo "4. Rotate old backups"
+        echo "5. Custom backup (choose source)"
+        echo "6. Full backup cycle (backup + rotate)"
+        echo ""
+        echo "0. Exit to main menu"
+        echo ""
+        read -p "Select an option: " choice
+        
+        case $choice in
+            1)
+                # Create backup now
+                clear
+                print_info "Starting backup..."
+                echo ""
+                
+                if validate_paths && check_disk_space; then
+                    echo ""
+                    if create_backup "$BACKUP_SOURCE" "$BACKUP_DEST"; then
+                        print_success "Backup completed!"
+                    else
+                        print_error "Backup failed!"
+                    fi
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            2)
+                # List current backups
+                clear
+                list_backups "$BACKUP_DEST"
+                read -p "Press Enter to continue..."
+                ;;
+                
+            3)
+                # Check disk space
+                clear
+                check_disk_space
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            4)
+                # Rotate old backups
+                clear
+                print_info "Checking for old backups..."
+                echo ""
+                rotate_backups "$BACKUP_DEST" "$RETENTION_DAYS"
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            5)
+                # Custom backup
+                clear
+                print_info "Custom Backup"
+                echo ""
+                read -p "Enter source path (e.g., /var/www): " custom_source
+                
+                if [ -d "$custom_source" ]; then
+                    print_info "Source: $custom_source"
+                    read -p "Proceed with backup? (yes/no): " confirm
+                    
+                    if [ "$confirm" = "yes" ]; then
+                        echo ""
+                        if validate_paths && check_disk_space; then
+                            echo ""
+                            if create_backup "$custom_source" "$BACKUP_DEST"; then
+                                print_success "Custom backup completed!"
+                            else
+                                print_error "Backup failed!"
+                            fi
+                        fi
+                    else
+                        print_info "Backup cancelled"
+                    fi
+                else
+                    print_error "Source path does not exist!"
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            6)
+                # Full backup cycle
+                clear
+                echo "========================================"
+                echo " Full Backup Cycle"
+                echo "========================================"
+                echo ""
+                
+                if validate_paths && check_disk_space; then
+                    echo ""
+                    if create_backup "$BACKUP_SOURCE" "$BACKUP_DEST"; then
+                        echo ""
+                        rotate_backups "$BACKUP_DEST" "$RETENTION_DAYS"
+                        echo ""
+                        list_backups "$BACKUP_DEST"
+                        echo ""
+                        print_success "Full backup cycle completed!"
+                    else
+                        print_error "Backup failed!"
+                    fi
+                fi
+                
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+                
+            0)
+                print_success "Returning to main menu..."
+                break
+                ;;
+                
+            *)
+                print_error "Invalid option"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
+#*******************************************************************************
 # Main Function 
 #*******************************************************************************
 
 print_header "Backup Script v1.0"
 
-# Parse arguments
-LIST_ONLY=false
+# Check if running with arguments (command-line mode)
+if [ $# -gt 0 ]; then
+    # Command-line mode (original functionality)
+    LIST_ONLY=false
 
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        -s|--source)
-            BACKUP_SOURCE="$2"
-            shift 2
-            ;;
-        -d|--dest)
-            BACKUP_DEST="$2"
-            shift 2
-            ;;
-        -r|--retention)
-            RETENTION_DAYS="$2"
-            shift 2
-            ;;
-        -l|--list)
-            LIST_ONLY=true
-            shift
-            ;;
-        -h|--help)
-            show_usage
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            show_usage
-            exit 1
-            ;;
-    esac
-done
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -s|--source)
+                BACKUP_SOURCE="$2"
+                shift 2
+                ;;
+            -d|--dest)
+                BACKUP_DEST="$2"
+                shift 2
+                ;;
+            -r|--retention)
+                RETENTION_DAYS="$2"
+                shift 2
+                ;;
+            -l|--list)
+                LIST_ONLY=true
+                shift
+                ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_usage
+                exit 1
+                ;;
+        esac
+    done
 
-#Checks permissions - need root/sudo priviledges
-check_root
+    check_root
 
-# Configuration summary
-echo "Configuration:"
-echo "  Source: $BACKUP_SOURCE"
-echo "  Destination: $BACKUP_DEST"
-echo "  Retention: $RETENTION_DAYS days"
-echo ""
-
-# List only mode
-if [ "$LIST_ONLY" = true ]; then
-    list_backups "$BACKUP_DEST"
-    exit 0
-fi
-
-# Validate paths
-if ! validate_paths; then
-    exit 1
-fi
-
-# Check disk space
-check_disk_space
-
-echo ""
-
-# Create backup
-if create_backup "$BACKUP_SOURCE" "$BACKUP_DEST"; then
+    # Configuration summary
+    echo "Configuration:"
+    echo "  Source: $BACKUP_SOURCE"
+    echo "  Destination: $BACKUP_DEST"
+    echo "  Retention: $RETENTION_DAYS days"
     echo ""
-    
-    # Rotate old backups
-    rotate_backups "$BACKUP_DEST" "$RETENTION_DAYS"
-    
+
+    # List only mode
+    if [ "$LIST_ONLY" = true ]; then
+        list_backups "$BACKUP_DEST"
+        exit 0
+    fi
+
+    # Validate paths
+    if ! validate_paths; then
+        exit 1
+    fi
+
+    # Check disk space
+    check_disk_space
+
     echo ""
-    
-    # Show current backups
-    list_backups "$BACKUP_DEST"
-    
-    print_success "Backup completed successfully!"
-    exit 0
+
+    # Create backup
+    if create_backup "$BACKUP_SOURCE" "$BACKUP_DEST"; then
+        echo ""
+        
+        # Rotate old backups
+        rotate_backups "$BACKUP_DEST" "$RETENTION_DAYS"
+        
+        echo ""
+        
+        # Show current backups
+        list_backups "$BACKUP_DEST"
+        
+        print_success "Backup completed successfully!"
+        exit 0
+    else
+        print_error "Backup failed!"
+        exit 1
+    fi
 else
-    print_error "Backup failed!"
-    exit 1
+    # Interactive mode (no arguments provided)
+    check_root
+    interactive_menu
+    exit 0
 fi
