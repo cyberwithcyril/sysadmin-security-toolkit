@@ -289,28 +289,83 @@ function Set-ServiceStartup {
 }
 
 #*******************************************************************************
-# Main Script - Controller
+# Main Script - Interactive Menu
 #*******************************************************************************
 
-Write-Host "`n=========================================" -ForegroundColor Cyan
-Write-Host " Windows Service Management v1.0" -ForegroundColor Cyan
-Write-Host "=========================================" -ForegroundColor Cyan
-
-#Check Administrator
+# Check Administrator
 if (-not (Test-Administrator)) {
     Write-Host "[ERROR] This script must be run as Administrator" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "[SUCCESS] Running with Administrator privileges" -ForegroundColor Green
-
-#Displays Help Menu
-Write-Host "`nScript loaded successfully!" -ForegroundColor Green
-Write-Host "`nAvailable Commands:" -ForegroundColor Yellow
-Write-Host "  Get-ServiceList                           # List all services" -ForegroundColor Gray
-Write-Host "  Get-ServiceInfo -ServiceName 'Spooler'    # Show service details" -ForegroundColor Gray
-Write-Host "  Start-ServiceSafe -ServiceName 'Spooler'  # Start a service" -ForegroundColor Gray
-Write-Host "  Stop-ServiceSafe -ServiceName 'Spooler'   # Stop a service" -ForegroundColor Gray
-Write-Host "  Restart-ServiceSafe -ServiceName 'Spooler' # Restart a service" -ForegroundColor Gray
-Write-Host "  Set-ServiceStartup -ServiceName 'Spooler' -StartupType 'Automatic' # Change startup" -ForegroundColor Gray
-Write-Host ""
+# Main menu loop
+while ($true) {
+    Write-Host "`n=========================================" -ForegroundColor Cyan
+    Write-Host " Windows Service Management v1.0" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "1. List all services" -ForegroundColor Yellow
+    Write-Host "2. Show service details" -ForegroundColor Yellow
+    Write-Host "3. Start a service" -ForegroundColor Yellow
+    Write-Host "4. Stop a service" -ForegroundColor Yellow
+    Write-Host "5. Restart a service" -ForegroundColor Yellow
+    Write-Host "6. Change service startup type" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "0. Exit to main menu" -ForegroundColor Red
+    Write-Host ""
+    
+    $choice = Read-Host "Select an option"
+    
+    switch ($choice) {
+        "1" {
+            Get-ServiceList
+            Read-Host "`nPress Enter to continue"
+        }
+        "2" {
+            $serviceName = Read-Host "`nEnter service name"
+            Get-ServiceInfo -ServiceName $serviceName
+            Read-Host "`nPress Enter to continue"
+        }
+        "3" {
+            $serviceName = Read-Host "`nEnter service name to start"
+            Start-ServiceSafe -ServiceName $serviceName
+            Read-Host "`nPress Enter to continue"
+        }
+        "4" {
+            $serviceName = Read-Host "`nEnter service name to stop"
+            Stop-ServiceSafe -ServiceName $serviceName
+            Read-Host "`nPress Enter to continue"
+        }
+        "5" {
+            $serviceName = Read-Host "`nEnter service name to restart"
+            Restart-ServiceSafe -ServiceName $serviceName
+            Read-Host "`nPress Enter to continue"
+        }
+        "6" {
+            $serviceName = Read-Host "`nEnter service name"
+            Write-Host "`nStartup Types:" -ForegroundColor Cyan
+            Write-Host "  1. Automatic"
+            Write-Host "  2. Manual"
+            Write-Host "  3. Disabled"
+            $typeChoice = Read-Host "`nSelect startup type (1-3)"
+            
+            $startupType = switch ($typeChoice) {
+                "1" { "Automatic" }
+                "2" { "Manual" }
+                "3" { "Disabled" }
+                default { "Manual" }
+            }
+            
+            Set-ServiceStartup -ServiceName $serviceName -StartupType $startupType
+            Read-Host "`nPress Enter to continue"
+        }
+        "0" {
+            Write-Host "`nReturning to main menu..." -ForegroundColor Green
+            exit 0
+        }
+        default {
+            Write-Host "`n[ERROR] Invalid option" -ForegroundColor Red
+            Start-Sleep -Seconds 1
+        }
+    }
+}
