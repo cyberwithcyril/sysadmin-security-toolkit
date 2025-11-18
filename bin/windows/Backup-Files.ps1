@@ -180,10 +180,16 @@ function New-CompressedBackup {
             $CompressionRatio = 0
         }
 
-#Success Logs       
-        Write-Host "[SUCCESS] Backup size: $(Format-FileSize $BackupSize)" -ForegroundColor Green
-        Write-Host "[SUCCESS] Compression ratio: $CompressionRatio%" -ForegroundColor Green
-        Write-Host "[SUCCESS] Saved to: $BackupPath" -ForegroundColor Green
+        #Success Logs
+        if ($SourceSize -eq 0) {
+            Write-Host "[WARNING] Source folder is empty (0 files backed up)" -ForegroundColor Yellow
+            Write-Host "[SUCCESS] Empty backup created: $(Format-FileSize $BackupSize)" -ForegroundColor Green
+            Write-Host "[SUCCESS] Saved to: $BackupPath" -ForegroundColor Green
+        } else {
+            Write-Host "[SUCCESS] Backup size: $(Format-FileSize $BackupSize)" -ForegroundColor Green
+            Write-Host "[SUCCESS] Compression ratio: $CompressionRatio%" -ForegroundColor Green
+            Write-Host "[SUCCESS] Saved to: $BackupPath" -ForegroundColor Green
+        }
 
 #Creates Log Entry      
         Write-AuditLog -Action "BACKUP_CREATE" -Result "SUCCESS" -Details "source=$Source size=$(Format-FileSize $BackupSize) file=$BackupName compression=$CompressionRatio%"
