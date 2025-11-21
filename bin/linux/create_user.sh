@@ -122,23 +122,240 @@ create_user_account() {
 }
 
 #*******************************************************************************
+# Function: Disable User Account
+#*******************************************************************************
+disable_user_account() {
+    local username="$1"
+    local reason="${2:-Account disabled by administrator}"
+    
+    echo ""
+    print_info "Disabling user account: $username"
+    echo "----------------------------------------"
+    
+#Check if user exists
+    if ! id "$username" &>/dev/null; then
+        print_error "User '$username' does not exist"
+        log_action "USER_DISABLE" "FAILURE" "username=$username error=user_not_found"
+        return 1
+    fi
+    
+#Prevent disabling root or current, or user who ran sudo
+    if [ "$username" == "root" ] || [ "$username" == "$SUDO_USER" ] || [ "$username" == "$(whoami)" ]; then
+        print_error "Cannot disable root or current user"
+        log_action "USER_DISABLE" "FAILURE" "username=$username error=protected_account"
+        return 1
+    fi
+    
+#Check if user already disabled
+    if passwd -S "$username" 2>/dev/null | grep -q " L "; then
+        print_warning "User '$username' is already disabled"
+        read -p "Continue anyway? (y/n): " confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            print_info "Cancelled"
+            return 0
+        fi
+    fi
+    
+#Lock the password
+    if passwd -l "$username" &>/dev/null; then
+        print_success "Password locked"
+    else
+        print_error "Failed to lock password"
+        log_action "USER_DISABLE" "FAILURE" "username=$username error=lock_failed"
+        return 1
+    fi
+    
+ #Expire the account - Sets expiration of account to epoch day 0
+    if chage -E 0 "$username" &>/dev/null; then
+        print_success "Account expired"
+    else
+        print_warning "Could not expire account"
+    fi
+    
+ #Extracts current shell from/etc/passwd, saves it to backup file, and then changes shell
+ #to /sbin/nologin
+    CURRENT_SHELL=$(grep "^$username:" /etc/passwd | cut -d: -f7)
+    mkdir -p /var/backups/user-shells
+    echo "$CURRENT_SHELL" > "/var/backups/user-shells/${username}_shell.bak"
+    
+    if usermod -s /sbin/nologin "$username" &>/dev/null; then
+        print_success "Shell changed to /sbin/nologin"
+    else
+        print_warning "Could not change shell"
+    fi
+    
+#Log the action
+    log_action "USER_DISABLE" "SUCCESS" "username=$username reason='$reason'"
+    
+    echo ""
+    echo -e "${GREEN}User '$username' has been disabled${NC}"
+    echo "Reason: $reason"
+    echo ""
+    echo "Current status:"
+    passwd -S "$username" 2>/dev/null
+    echo ""
+    
+    return 0
+}
+
+#*******************************************************************************
+# Function: Enable User Account
+#*******************************************************************************
+enable_user_account() {
+    local username="$1"
+    
+    echo ""
+    print_info "Enabling user account: $username"
+    echo "----------------------------------------"
+    
+#Check if user exists
+    if ! id "$username" &>/dev/null; then
+        print_error "User '$username' does not exist"
+        log_action "USER_ENABLE" "FAILURE" "username=$username error=user_not_found"
+        return 1
+    fi
+    
+    local changes_made=false
+    
+#Check if password is locked - if locked unlocks
+    if passwd -S "$username" 2>/dev/null | grep -q " L "; then
+        if passwd -u "$username" &>/dev/null; then
+            print_success "Password unlocked"
+            changes_made=true
+        else
+            print_error "Failed to unlock password"
+        fi
+    else
+        print_info "Password is not locked"
+    fi
+    
+#Check and remove account expiration
+    EXPIRE_DATE=$(chage -l "$username" 2>/dev/null | grep "Account expires" | cut -d: -f2 | xargs)
+    if [[ "$EXPIRE_DATE" == *"Jan 01, 1970"* ]] || [[ "$EXPIRE_DATE" == *"1970-01-01"* ]]; then
+        if chage -E -1 "$username" &>/dev/null; then
+            print_success "Account expiration removed"
+            changes_made=true
+        else
+            print_warning "Could not remove expiration"
+        fi
+    else
+        print_info "Account is not expired"
+    fi
+    
+#Check and restore shell if nologin
+    CURRENT_SHELL=$(grep "^$username:" /etc/passwd | cut -d: -f7)
+    if [[ "$CURRENT_SHELL" == "/sbin/nologin" ]] || [[ "$CURRENT_SHELL" == "/usr/sbin/nologin" ]]; then
+        SHELL_BACKUP="/var/backups/user-shells/${username}_shell.bak"
+        
+        if [ -f "$SHELL_BACKUP" ]; then
+            ORIGINAL_SHELL=$(cat "$SHELL_BACKUP")
+            if usermod -s "$ORIGINAL_SHELL" "$username" &>/dev/null; then
+                print_success "Shell restored to: $ORIGINAL_SHELL"
+                changes_made=true
+            else
+                print_warning "Could not restore shell"
+            fi
+        else
+#No backup, use default
+            if usermod -s /bin/bash "$username" &>/dev/null; then
+                print_success "Shell set to: /bin/bash (default)"
+                changes_made=true
+            else
+                print_warning "Could not set shell"
+            fi
+        fi
+    else
+        print_info "Shell is already set to: $CURRENT_SHELL"
+    fi
+    
+    if $changes_made; then
+        log_action "USER_ENABLE" "SUCCESS" "username=$username"
+        echo ""
+        echo -e "${GREEN}User '$username' has been enabled${NC}"
+    else
+        print_info "User '$username' appears to already be enabled"
+    fi
+    
+    echo ""
+    echo "Current status:"
+    passwd -S "$username" 2>/dev/null
+    echo ""
+    
+    return 0
+}
+
+#*******************************************************************************
+# Function: View Disabled Users
+#*******************************************************************************
+list_disabled_users() {
+    echo ""
+    echo "========================================"
+    echo " Disabled Users"
+    echo "========================================"
+    echo ""
+    
+    local found_disabled=false
+    
+#Reads through /etc/passwd line by line Filtering for regular users -6544
+#Checks if each users password is locked - if locked - Displays username, UID, password status
+#expiration date and current shell
+
+    while IFS=: read -r username _ uid _ _ _ _; do
+        if [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ]; then
+            # Check if password is locked
+            if passwd -S "$username" 2>/dev/null | grep -q " L "; then
+                found_disabled=true
+                echo "User: $username"
+                echo "  UID: $uid"
+                
+                # Get lock status
+                PASS_STATUS=$(passwd -S "$username" 2>/dev/null)
+                echo "  Status: $PASS_STATUS"
+                
+                # Get expiry
+                EXPIRE=$(chage -l "$username" 2>/dev/null | grep "Account expires" | cut -d: -f2)
+                echo "  Expiry: $EXPIRE"
+                
+                # Get shell
+                SHELL=$(grep "^$username:" /etc/passwd | cut -d: -f7)
+                echo "  Shell: $SHELL"
+                echo ""
+            fi
+        fi
+    done < /etc/passwd
+    
+    if ! $found_disabled; then
+        print_success "No disabled users found"
+    fi
+}
+
+#*******************************************************************************
 # Function: show_usage
 #*******************************************************************************
-#Displays instructions for the user of how the create_user script works
-#Examples of how the script works
 show_usage() {
     cat << USAGE
 Usage: $0 [OPTIONS]
 
 Options:
     -u, --username USERNAME    Username (required)
-    -f, --fullname "NAME"      Full name (required)
+    -f, --fullname "NAME"      Full name (required for create)
     -g, --groups GROUPS        Groups (optional)
+    -d, --disable              Disable user account
+    -e, --enable               Enable user account
+    -r, --reason "REASON"      Reason for disabling (optional)
     -h, --help                 Help
 
 Examples:
+    # Create user
     $0 -u jdoe -f "John Doe"
     $0 -u jsmith -f "Jane Smith" -g developers,sudo
+    
+    # Disable user
+    $0 -u jdoe --disable
+    $0 -u jdoe --disable -r "User on leave"
+    
+    # Enable user
+    $0 -u jdoe --enable
 
 USAGE
 }
@@ -146,20 +363,27 @@ USAGE
 #*******************************************************************************
 # Function: interactive_menu
 #*******************************************************************************
-# Interactive menu for user creation
 interactive_menu() {
     while true; do
         echo ""
         echo "========================================"
-        echo " Linux User Management"
+        echo " Linux User Management v2.0"
         echo "========================================"
         echo ""
-        echo "1. Create single user"
-        echo "2. Create user with custom groups"
-        echo "3. List existing users"
-        echo "4. View audit log"
+        echo "USER CREATION:"
+        echo "  1. Create single user"
+        echo "  2. Create user with custom groups"
         echo ""
-        echo "0. Exit to main menu"
+        echo "USER MANAGEMENT:"
+        echo "  3. Disable user account"
+        echo "  4. Enable user account"
+        echo ""
+        echo "INFORMATION:"
+        echo "  5. List all users"
+        echo "  6. List disabled users"
+        echo "  7. View audit log"
+        echo ""
+        echo "  0. Exit to main menu"
         echo ""
         read -p "Select an option: " choice
         
@@ -216,7 +440,75 @@ interactive_menu() {
                 ;;
                 
             3)
-                # List existing users
+                # Disable user (NEW)
+                clear
+                echo ""
+                echo "========================================"
+                echo " Disable User Account"
+                echo "========================================"
+                echo ""
+                
+                # Show enabled users
+                echo "Currently enabled users:"
+                while IFS=: read -r username _ uid _ _ _ _; do
+                    if [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ]; then
+                        # Check if not locked
+                        if ! passwd -S "$username" 2>/dev/null | grep -q " L "; then
+                            echo "  - $username"
+                        fi
+                    fi
+                done < /etc/passwd
+                echo ""
+                
+                read -p "Enter username to disable: " username
+                
+                if [ -z "$username" ]; then
+                    print_error "Username is required"
+                    read -p "Press Enter to continue..."
+                    continue
+                fi
+                
+                read -p "Enter reason for disabling (optional): " reason
+                
+                read -p "Disable user '$username'? (y/n): " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    if [ -z "$reason" ]; then
+                        disable_user_account "$username"
+                    else
+                        disable_user_account "$username" "$reason"
+                    fi
+                else
+                    print_info "Cancelled"
+                fi
+                
+                read -p "Press Enter to continue..."
+                ;;
+                
+            4)
+                # Enable user (NEW)
+                clear
+                list_disabled_users
+                
+                read -p "Enter username to enable: " username
+                
+                if [ -z "$username" ]; then
+                    print_error "Username is required"
+                    read -p "Press Enter to continue..."
+                    continue
+                fi
+                
+                read -p "Enable user '$username'? (y/n): " confirm
+                if [[ "$confirm" =~ ^[Yy]$ ]]; then
+                    enable_user_account "$username"
+                else
+                    print_info "Cancelled"
+                fi
+                
+                read -p "Press Enter to continue..."
+                ;;
+                
+            5)
+                # List all users
                 clear
                 echo ""
                 echo "========================================"
@@ -224,20 +516,48 @@ interactive_menu() {
                 echo "========================================"
                 echo ""
                 
+                local total=0
+                local enabled=0
+                local disabled=0
+                
                 while IFS=: read -r username _ uid _ comment home _; do
                     if [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ]; then
+                        total=$((total + 1))
+                        
+                        # Check if disabled
+                        if passwd -S "$username" 2>/dev/null | grep -q " L "; then
+                            disabled=$((disabled + 1))
+                            STATUS="${RED}Disabled${NC}"
+                        else
+                            enabled=$((enabled + 1))
+                            STATUS="${GREEN}Enabled${NC}"
+                        fi
+                        
                         echo "User: $username"
                         echo "  UID: $uid"
                         echo "  Name: $comment"
                         echo "  Home: $home"
+                        echo -e "  Status: $STATUS"
                         echo ""
                     fi
                 done < /etc/passwd
                 
+                echo "----------------------------------------"
+                echo "Total users: $total"
+                echo -e "${GREEN}Enabled: $enabled${NC}"
+                echo -e "${RED}Disabled: $disabled${NC}"
+                
                 read -p "Press Enter to continue..."
                 ;;
                 
-            4)
+            6)
+                # List disabled users (NEW)
+                clear
+                list_disabled_users
+                read -p "Press Enter to continue..."
+                ;;
+                
+            7)
                 # View audit log
                 clear
                 echo ""
@@ -256,7 +576,7 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-           0)
+            0)
                 print_success "Returning to main menu..."
                 return 0
                 ;;
@@ -275,14 +595,15 @@ interactive_menu() {
 
 check_root
 
-print_header "User Creation Script v1.0"
+print_header "User Management Script v2.0"
 
 # Check if running with arguments (command-line mode)
 if [ $# -gt 0 ]; then
-    # Command-line mode (original functionality)
     USERNAME=""
     FULLNAME=""
     GROUPS=""
+    ACTION="create"
+    REASON=""
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -298,6 +619,18 @@ if [ $# -gt 0 ]; then
                 GROUPS="$2"
                 shift 2
                 ;;
+            -d|--disable)
+                ACTION="disable"
+                shift
+                ;;
+            -e|--enable)
+                ACTION="enable"
+                shift
+                ;;
+            -r|--reason)
+                REASON="$2"
+                shift 2
+                ;;
             -h|--help)
                 show_usage
                 exit 0
@@ -310,24 +643,49 @@ if [ $# -gt 0 ]; then
         esac
     done
 
-    if [ -z "$USERNAME" ] || [ -z "$FULLNAME" ]; then
-        print_error "Username and fullname required"
+    if [ -z "$USERNAME" ]; then
+        print_error "Username required"
         show_usage
         exit 1
     fi
 
-    if ! validate_username "$USERNAME"; then
-        exit 1
-    fi
-
-    if create_user_account "$USERNAME" "$FULLNAME" "$GROUPS"; then
-        exit 0
-    else
-        exit 1
-    fi
+    case $ACTION in
+        create)
+            if [ -z "$FULLNAME" ]; then
+                print_error "Full name required for user creation"
+                show_usage
+                exit 1
+            fi
+            
+            if ! validate_username "$USERNAME"; then
+                exit 1
+            fi
+            
+            if create_user_account "$USERNAME" "$FULLNAME" "$GROUPS"; then
+                exit 0
+            else
+                exit 1
+            fi
+            ;;
+            
+        disable)
+            if disable_user_account "$USERNAME" "$REASON"; then
+                exit 0
+            else
+                exit 1
+            fi
+            ;;
+            
+        enable)
+            if enable_user_account "$USERNAME"; then
+                exit 0
+            else
+                exit 1
+            fi
+            ;;
+    esac
 else
-    # Interactive mode (no arguments provided)
+    # Interactive mode
     interactive_menu
-    # Exit after menu closes
     exit 0
 fi
