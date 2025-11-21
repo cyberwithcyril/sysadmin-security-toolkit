@@ -3,8 +3,8 @@
 # Script Name: sysadmin-toolkit.sh
 # Description: Launcher for SysAdmin Toolkit (Linux & Windows)
 # Author: Cyril Thomas
-# Date: November 5, 2025
-# Version: 1.0
+# Date: November 21, 2025
+# Version: 2.0 - Updated for User Enable/Disable Features
 #********************************************************************************
 
 #Color Definitions [ANSI Color Codes]
@@ -49,7 +49,7 @@ show_banner() {
     echo "╔════════════════════════════════════════════════════════════════╗"
     echo "║                                                                ║"
     echo "║          CTRL_OPS - SYSADMIN TOOLKIT                           ║"
-    echo "║                     Version 1.0                                ║"
+    echo "║                     Version 2.0                                ║"
     echo "║                                                                ║"
     echo "║              Created by: Cyril Thomas                          ║"
     echo "║              Date: November 2025                               ║"
@@ -57,7 +57,7 @@ show_banner() {
     echo "╚════════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
     
-    # Show detected OS 
+#Show detected OS 
     if [ "$OS_TYPE" == "Linux" ]; then
         echo -e "${GREEN}✓ Detected OS: Linux${NC}"
         echo -e "${GREEN}  All Linux tools available${NC}"
@@ -75,7 +75,7 @@ show_banner() {
 #*******************************************************************************
 # Function: show_menu
 #*******************************************************************************
-#Menu Based On OS -Windows/Linux - Displays Tools for Linux and Alerts Windows Tools
+#Menu Based On OS - Windows/Linux - Displays Tools for Linux and Alerts Windows Tools
 #Not Available - viceversa
 show_menu() {
     echo -e "${YELLOW}═══════════════════════════════════════════════════════════════${NC}"
@@ -83,7 +83,7 @@ show_menu() {
     if [ "$OS_TYPE" == "Linux" ]; then
         echo -e "${GREEN}LINUX TOOLS:${NC}"
         echo ""
-        echo -e "  ${GREEN}1.${NC} User Management        - Create and Manage User Accounts"
+        echo -e "  ${GREEN}1.${NC} User Management        - Create, Enable, Disable, Manage Users"
         echo -e "  ${GREEN}2.${NC} Backup Automation      - Backup Files with compression"
         echo -e "  ${GREEN}3.${NC} Log Rotation           - Manage and Rotate System Logs"
         echo -e "  ${GREEN}4.${NC} System Monitoring      - Monitor CPU, Memory, Disk Usage"
@@ -97,7 +97,7 @@ show_menu() {
     elif [ "$OS_TYPE" == "Windows" ]; then
         echo -e "${BLUE}WINDOWS TOOLS:${NC}"
         echo ""
-        echo -e "  ${BLUE}1.${NC} User Management        - Create and Manage User Accounts"
+        echo -e "  ${BLUE}1.${NC} User Management        - Create, Enable, Disable, Manage Users"
         echo -e "  ${BLUE}2.${NC} Backup Automation      - Backup Files with Compression"
         echo -e "  ${BLUE}3.${NC} Event Log Management   - Archive and Manage Event Logs"
         echo -e "  ${BLUE}4.${NC} System Monitoring      - Monitor CPU, Memory, Disk Usage"
@@ -152,7 +152,6 @@ run_linux_tool() {
 # Function: run_windows_tool
 #*******************************************************************************
 #Router - Based on tool number calls the appropriate windows script
-
 run_windows_tool() {
     local tool="$1" #[User Management, Backup Automation, Event Log Management, System
     #Monitoring, Service Management]
@@ -178,33 +177,23 @@ run_windows_tool() {
 # Linux Tool Functions
 #*******************************************************************************
 #Linux Functions Menu
+#Launches Linux User Management script with interactive menu
+#Features: Create users, Enable/Disable users, List users, Audit logs
 run_linux_user_management() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo -e "${CYAN}  Linux User Management${NC}"
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
-    echo "1. Create single user"
-    echo "2. Bulk create from CSV"
-    echo "3. Back to main menu"
+    echo "Launching User Management Menu..."
+    echo "(Includes: Create, Enable, Disable, List Users)"
     echo ""
-    read -p "Select: " choice
-    
-    case $choice in
-        1)
-            read -p "Username: " user
-            read -p "Full name: " name
-            sudo "$LINUX_BIN/create_user.sh" -u "$user" -f "$name"
-            ;;
-        2)
-            read -p "CSV path: " csv
-            sudo "$LINUX_BIN/create_users_from_csv.sh" "$csv"
-            ;;
-        3) return ;;
-    esac
-    read -p "Press Enter..."
+#Launch interactive menu with all features
+#Script contains its own menu - no arguments = interactive mode
+    sudo "$LINUX_BIN/create_user.sh"
 }
 
+#Launches Linux Backup script
 run_linux_backup() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -216,6 +205,7 @@ run_linux_backup() {
     sudo "$LINUX_BIN/backup_files.sh"
 }
 
+#Launches Linux Log Rotation script
 run_linux_log_rotation() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -227,6 +217,7 @@ run_linux_log_rotation() {
     sudo "$LINUX_BIN/rotate_logs.sh"
 }
 
+#Launches Linux System Monitoring script
 run_linux_monitoring() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -238,6 +229,7 @@ run_linux_monitoring() {
     sudo "$LINUX_BIN/monitor_system.sh"
 }
 
+#Launches Linux Service Management script
 run_linux_service_management() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -253,18 +245,24 @@ run_linux_service_management() {
 # Windows Tool Functions
 #*******************************************************************************
 #Windows Functions Menu
-
+#Launches Windows User Management PowerShell script with interactive menu
+#Features: Create users, Enable/Disable users, List users, Audit logs
 run_windows_user_management() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo -e "${CYAN}  Windows User Management${NC}"
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
-    echo "Launching PowerShell script..."
+    echo "Launching PowerShell User Management..."
+    echo "(Includes: Create, Enable, Disable, List Users)"
+    echo ""
     cd "$SCRIPT_DIR"
+    #Launches PowerShell script with execution policy bypass
+    #Script contains its own interactive menu
     powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/New-BulkUsers.ps1'"
 }
 
+#Launches Windows Backup PowerShell script
 run_windows_backup() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -276,6 +274,7 @@ run_windows_backup() {
     powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Backup-Files.ps1'"
 }
 
+#Launches Windows Event Log Management PowerShell script
 run_windows_eventlog() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -287,6 +286,7 @@ run_windows_eventlog() {
     powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Manage-EventLogs.ps1'"
 }
 
+#Launches Windows System Monitoring PowerShell script
 run_windows_monitoring() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -298,6 +298,7 @@ run_windows_monitoring() {
     powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Monitor-System.ps1'"
 }
 
+#Launches Windows Service Management PowerShell script
 run_windows_service_management() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -308,7 +309,11 @@ run_windows_service_management() {
     cd "$SCRIPT_DIR"
     powershell.exe -ExecutionPolicy Bypass -Command ". './bin/windows/Manage-Service.ps1'"
 }
-#About Section
+
+#*******************************************************************************
+# Function: show_about
+#*******************************************************************************
+#About Section - Displays toolkit information, features, and supported platforms
 show_about() {
     clear
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
@@ -316,11 +321,18 @@ show_about() {
     echo -e "${CYAN}═══════════════════════════════════════${NC}"
     echo ""
     echo "SysAdmin Toolkit - Universal Edition"
-    echo "Version: 1.0"
+    echo "Version: 2.0"
     echo "Created: November 2025"
     echo "Author: Cyril Thomas"
     echo ""
-    echo "Cross-platform system administration automation toolkit "
+    echo "Cross-platform system administration automation toolkit"
+    echo ""
+    echo "Features:"
+    echo "  • User Management (Create, Enable, Disable)"
+    echo "  • Backup Automation"
+    echo "  • Log Management"
+    echo "  • System Monitoring"
+    echo "  • Service Management"
     echo ""
     echo "Technology Stack:"
     echo "  • Bash "
@@ -338,22 +350,23 @@ show_about() {
 # Main Loop - CORE
 #********************************************************************************
 
-# Detect OS to determine which operating system
+#Detect OS to determine which operating system
 detect_os
 
-# Check Git Bash on Windows && Powershell Path is found in PATH
+#Check Git Bash on Windows && PowerShell Path is found in PATH
 if [ "$OS_TYPE" == "Windows" ] && ! command -v powershell.exe &> /dev/null; then
     echo -e "${RED}ERROR: PowerShell not found!${NC}"
     echo "This toolkit requires PowerShell on Windows"
     exit 1
 fi
 
-# Main menu - Show Until User Chooses to Exit
+#Main menu - Show Until User Chooses to Exit
 while true; do
     show_banner
     show_menu
     
     read -p "Select an option: " choice
+    
 #If user selects 1-5: Execute the appropriate tool   
     case $choice in
         1|2|3|4|5)
