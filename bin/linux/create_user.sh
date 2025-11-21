@@ -504,7 +504,7 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-          2)
+2)
 #Create users from CSV
                 clear
                 echo ""
@@ -524,7 +524,7 @@ interactive_menu() {
                 
                 read -p "Enter CSV file path (or 'back' to return): " csv_path
                 
-                # Check if user wants to go back
+#Check if user wants to go back
                 if [[ "$csv_path" == "back" ]] || [[ "$csv_path" == "b" ]]; then
                     continue
                 fi
@@ -535,10 +535,7 @@ interactive_menu() {
                     continue
                 fi
                 
-#DEBUG: Show what we received
-                echo "DEBUG: Input path = '$csv_path'"
-                
-#Expand ~ to home directory (FIX FOR SUDO)
+#Expand ~ to home directory (works with sudo)
                 if [[ "$csv_path" == ~* ]]; then
 #If running with sudo, use the original user's home
                     if [ -n "$SUDO_USER" ]; then
@@ -549,17 +546,10 @@ interactive_menu() {
                     fi
                 fi
                 
-#DEBUG: Show after expansion
-                echo "DEBUG: After expansion = '$csv_path'"
-                echo "DEBUG: SUDO_USER = '$SUDO_USER'"
-                echo "DEBUG: USER_HOME = '$USER_HOME'"
-                read -p "Press Enter to see if file exists..."
-                
                 import_users_from_csv "$csv_path"
                 
                 read -p "Press Enter to continue..."
                 ;;
-
             3)
 #Create user with custom groups
                 clear
