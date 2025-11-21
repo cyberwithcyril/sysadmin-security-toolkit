@@ -302,21 +302,21 @@ list_disabled_users() {
 
     while IFS=: read -r username _ uid _ _ _ _; do
         if [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ]; then
-            # Check if password is locked
+#Check if password is locked
             if passwd -S "$username" 2>/dev/null | grep -q " L "; then
                 found_disabled=true
                 echo "User: $username"
                 echo "  UID: $uid"
                 
-                # Get lock status
+#Get lock status
                 PASS_STATUS=$(passwd -S "$username" 2>/dev/null)
                 echo "  Status: $PASS_STATUS"
                 
-                # Get expiry
+#Get expiration 
                 EXPIRE=$(chage -l "$username" 2>/dev/null | grep "Account expires" | cut -d: -f2)
                 echo "  Expiry: $EXPIRE"
                 
-                # Get shell
+#Get shell
                 SHELL=$(grep "^$username:" /etc/passwd | cut -d: -f7)
                 echo "  Shell: $SHELL"
                 echo ""
@@ -332,6 +332,8 @@ list_disabled_users() {
 #*******************************************************************************
 # Function: show_usage
 #*******************************************************************************
+#Manual
+
 show_usage() {
     cat << USAGE
 Usage: $0 [OPTIONS]
@@ -389,7 +391,7 @@ interactive_menu() {
         
         case $choice in
             1)
-                # Create single user
+#Create single user
                 clear
                 echo ""
                 echo "========================================"
@@ -414,7 +416,7 @@ interactive_menu() {
                 ;;
                 
             2)
-                # Create user with custom groups
+#Create user with custom groups
                 clear
                 echo ""
                 echo "========================================"
@@ -440,7 +442,7 @@ interactive_menu() {
                 ;;
                 
             3)
-                # Disable user (NEW)
+#Disable User
                 clear
                 echo ""
                 echo "========================================"
@@ -448,7 +450,7 @@ interactive_menu() {
                 echo "========================================"
                 echo ""
                 
-                # Show enabled users
+#Show Enabled Users
                 echo "Currently enabled users:"
                 while IFS=: read -r username _ uid _ _ _ _; do
                     if [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ]; then
@@ -485,7 +487,7 @@ interactive_menu() {
                 ;;
                 
             4)
-                # Enable user (NEW)
+#Enable user 
                 clear
                 list_disabled_users
                 
@@ -508,7 +510,7 @@ interactive_menu() {
                 ;;
                 
             5)
-                # List all users
+#List all users
                 clear
                 echo ""
                 echo "========================================"
@@ -551,14 +553,14 @@ interactive_menu() {
                 ;;
                 
             6)
-                # List disabled users (NEW)
+#List disabled users (NEW)
                 clear
                 list_disabled_users
                 read -p "Press Enter to continue..."
                 ;;
                 
             7)
-                # View audit log
+#View audit log
                 clear
                 echo ""
                 echo "========================================"
@@ -597,7 +599,7 @@ check_root
 
 print_header "User Management Script v2.0"
 
-# Check if running with arguments (command-line mode)
+#Check if running with arguments (command-line mode)
 if [ $# -gt 0 ]; then
     USERNAME=""
     FULLNAME=""
@@ -685,7 +687,7 @@ if [ $# -gt 0 ]; then
             ;;
     esac
 else
-    # Interactive mode
+#Interactive mode
     interactive_menu
     exit 0
 fi
