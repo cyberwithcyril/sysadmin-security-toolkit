@@ -229,6 +229,156 @@ function Import-UsersFromCSV {
     Write-AuditLog -Action "BULK_USER_CREATE" -Result "SUCCESS" -Details "total=$Total success=$SuccessCount failed=$FailCount"
 }
 
+#****************************************************************************************
+# Function: Disable User Account
+#****************************************************************************************
+function Disable-LocalUserAccount{
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$username,
+
+        [Parameter(Mandatory=$false)]
+        [string]$Reason = "Account Disabled by Administrator"
+    )
+
+    Write-Host "'n======================================================" -ForegroundColor Cyan
+    Write-Host "  Disabling User: $Username" - ForegroundColor Cyan
+    Write-Host "=========================================================="
+    
+
+    #Check if user exists
+
+    try {
+        $user = Get-LocalUser -Name $Usernmae -ErrorAction Stop
+    }
+    catch {
+        Write-Host "[ERROR] User '$Usernmae' does not exist" - ForegroundColor Red
+        Write-AuditLog -Action "USER_DISABLE" -Result "FAILURE" -Details
+         "username=$Username error=user_not_found"
+        return $false
+    }
+
+    #Check if user is already disabled
+
+    if(-not $user.Enabled){
+        Write-Host "[WARNING] User '$Username is already disabled" -ForegroundColor Yellow  
+        return $true
+}
+
+#Prevent Disabling Administrator or Current User
+
+if ($Username -eq "Administrator" -or $Username -eq $env:USERNAME) {
+    Write-Host "[ERROR] Cannot Disable Administrator or Current User" - ForegroundColor Red
+    Write-AuditLog -Action "USER_DISABLE" -Result "FAILURE" -Details "username=$Username error=protected_account"
+    return $false
+}
+
+#Disable the account
+
+try{
+    Disable-LocalUser - Name $Username
+    Write-Host "[SUCCESS] Account Disabled" -ForegroundColor Green
+
+#Update description with timestamp and optional reason
+$timestamp = Get-Date -Format "yyyy-MM-dd HH:mm"
+$newDescription = "DISABLED($timestamp): $Reason"
+Set-LocalUser -Name $Username -Description $newDescription
+
+Write-AuditLog -Action "USER_DISABLE" -Result "SUCCESS" -Details "username=$Username
+reason= '$Reason' "
+
+#Display status
+Write-Host "'n[SUCCESS] User '$Username' has been disabled " - ForegroundColor Green
+Write-Host "Reason: $Reason " -ForegroundColor White
+Write-Host ""
+
+Get-LocalUser -Name $Username | Select-Object Name, Enabled, Description, LastLogon | Format-List
+
+return $true
+}
+
+catch{
+    Write-Host "[ERROR] Failed to Disable User: $_"- ForegroundColor Red
+    Write-Auditlog -Action "USER_DISABLE" -Result "FAILURE" -Details "username=$Username 
+    error=$($_.Exception.Message)"
+    return $false
+}
+}
+
+#************************************************************************************
+#Function: Enable-LocalUserAccount
+#*************************************************************************************
+
+fucntion Enable-LocalUserAccount {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$Username
+    )
+
+
+    Write-Host "'====================================================================" -ForegroundColor Cyan
+    Write-Host " Enabling User: $Username" -ForegroundColor Cyan
+    Write-Host "======================================================================" -ForgroundColor Cyan
+    
+#Check if user exists 
+    try{
+        $user = Get-LocalUser -Name $Username -ErrorAction Stop
+    }
+    catch{
+        Write-Host "[ERROR] User '$Username' does not exist" -ForegroundColor Red
+        Write-AuditLog -Action "USER_ENABLE" -Result "FAILURE" -Details "username=$Username
+        error=user_not_found"
+        return $false
+    }
+
+#Check if user is already enabled
+if($user.Enabled){
+    Write-Host "[INFO] User '$Username' is already enabled" -ForegroundColor Green
+    Get-LocalUser -Name $Username | Select-Object Name, Enabled, Description, LastLogon | Format-List
+    $return $true
+}
+try{
+    #Enable User Account
+    Enable-LocalUser -Name $Username
+    Write-Host "[SUCCESS] Account enabled" -ForegroundColor Green
+
+        #Remove expiration if set
+        if ($user.AccountExpires) {
+            $expiryDate = $user.AccountExpires
+            $now = Get-Date
+            
+            if ($expiryDate -lt $now) {
+                Set-LocalUser -Name $Username -AccountExpires $null
+                Write-Host "[SUCCESS] Account expiration removed" -ForegroundColor Green
+            }
+        }
+        
+        #Update description to remove "DISABLED" flag
+        $currentDesc = $user.Description
+        if ($currentDesc -match "DISABLED") {
+            $newDesc = $currentDesc -replace "DISABLED.*?:", "RE-ENABLED $(Get-Date -Format 'yyyy-MM-dd HH:mm'):"
+            Set-LocalUser -Name $Username -Description $newDesc
+        }
+        
+        Write-AuditLog -Action "USER_ENABLE" -Result "SUCCESS" -Details "username=$Username"
+        
+        Write-Host "`n[SUCCESS] User '$Username' has been enabled" -ForegroundColor Green
+        Write-Host "The user can now login with their existing password." -ForegroundColor White
+        Write-Host ""
+        
+        Get-LocalUser -Name $Username | Select-Object Name, Enabled, Description, AccountExpires, LastLogon | Format-List
+        
+        return $true
+    }
+    catch {
+        Write-Host "[ERROR] Failed to enable user: $_" -ForegroundColor Red
+        Write-AuditLog -Action "USER_ENABLE" -Result "FAILURE" -Details "username=$Username error=$($_.Exception.Message)"
+        return $false
+    }
+
+}
+
+
 #**********************************************************************************
 # Main Script - Interactive Menu
 #***********************************************************************************
@@ -249,17 +399,24 @@ while ($true) {
     Write-Host "1. Create single user" -ForegroundColor Yellow
     Write-Host "2. Create single user with custom groups" -ForegroundColor Yellow
     Write-Host "3. Create users from CSV file" -ForegroundColor Yellow
-    Write-Host "4. List existing local users" -ForegroundColor Yellow
-    Write-Host "5. View audit log" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "0. Exit to main menu" -ForegroundColor Red
+    Write-Host "USER MANAGEMENT:" -ForegroundColor Yellow
+    Write-Host "4. Disable user account" -ForegroundColor White
+    Write-Host "5. Enable user account" -ForegroundColore White
+    Write-Host ""
+    Write-Host "INFORMATION:" -ForegroundColor Yellow
+    Write-Host "6. List all local users" -ForegroundColor White
+    Write-Host "7. List disabled users" -ForegroundColors White
+    Write-Host "8. View audit log" -ForegroundColor White
+    Write-Host ""
+    Write-Host "0. Exit to Main Menu" -ForegroundColor Red
     Write-Host ""
     
     $choice = Read-Host "Select an option"
     
     switch ($choice) {
         "1" {
-            #Create single user with default group (Users)
+#Create single user
             Clear-Host
             Write-Host "`n========================================" -ForegroundColor Cyan
             Write-Host " Create Single User" -ForegroundColor Cyan
@@ -278,7 +435,7 @@ while ($true) {
             Read-Host "`nPress Enter to continue"
         }
         "2" {
-            #Create single user with custom groups
+#Create single user with custom groups
             Clear-Host
             Write-Host "`n========================================" -ForegroundColor Cyan
             Write-Host " Create User with Custom Groups" -ForegroundColor Cyan
@@ -316,7 +473,7 @@ while ($true) {
             Read-Host "`nPress Enter to continue"
         }
         "3" {
-            #Create users from CSV
+#Create users from CSV
             Clear-Host
             Write-Host "`n========================================" -ForegroundColor Cyan
             Write-Host " Bulk User Creation from CSV" -ForegroundColor Cyan
@@ -344,10 +501,81 @@ while ($true) {
             Read-Host "`nPress Enter to continue"
         }
         "4" {
-            #List existing local users
+#Disable user
             Clear-Host
             Write-Host "`n========================================" -ForegroundColor Cyan
-            Write-Host " Local Users" -ForegroundColor Cyan
+            Write-Host " Disable User Account" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            
+#Show enabled users
+            Write-Host "Currently enabled users:" -ForegroundColor Yellow
+            Get-LocalUser | Where-Object {$_.Enabled -eq $true -and $_.Name -ne "Administrator" -and $_.Name -ne $env:USERNAME} | ForEach-Object {
+                Write-Host "  - $($_.Name)" -ForegroundColor White
+            }
+            Write-Host ""
+            
+            $username = Read-Host "Enter username to disable"
+            
+            if ($username) {
+                $reason = Read-Host "Enter reason for disabling (optional)"
+                if ([string]::IsNullOrWhiteSpace($reason)) {
+                    $reason = "Account disabled by administrator"
+                }
+                
+                $confirm = Read-Host "Disable user '$username'? (Y/N)"
+                if ($confirm -eq 'Y' -or $confirm -eq 'y') {
+                    Disable-LocalUserAccount -Username $username -Reason $reason
+                } else {
+                    Write-Host "[INFO] Cancelled" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "[ERROR] Username is required" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "5" {
+#Enable user 
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Enable User Account" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            
+#Show disabled users
+            Write-Host "Currently disabled users:" -ForegroundColor Yellow
+            $disabledUsers = Get-LocalUser | Where-Object {$_.Enabled -eq $false}
+            
+            if ($disabledUsers.Count -eq 0) {
+                Write-Host "  No disabled users found" -ForegroundColor Green
+            } else {
+                $disabledUsers | ForEach-Object {
+                    Write-Host "  - $($_.Name)" -ForegroundColor White
+                }
+            }
+            Write-Host ""
+            
+            $username = Read-Host "Enter username to enable"
+            
+            if ($username) {
+                $confirm = Read-Host "Enable user '$username'? (Y/N)"
+                if ($confirm -eq 'Y' -or $confirm -eq 'y') {
+                    Enable-LocalUserAccount -Username $username
+                } else {
+                    Write-Host "[INFO] Cancelled" -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "[ERROR] Username is required" -ForegroundColor Red
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "6" {
+ #List all users
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " All Local Users" -ForegroundColor Cyan
             Write-Host "========================================" -ForegroundColor Cyan
             Write-Host ""
             
@@ -365,11 +593,39 @@ while ($true) {
             }
             
             Write-Host "Total users: $($users.Count)" -ForegroundColor Cyan
+            Write-Host "Enabled: $(($users | Where-Object {$_.Enabled}).Count)" -ForegroundColor Green
+            Write-Host "Disabled: $(($users | Where-Object {-not $_.Enabled}).Count)" -ForegroundColor Red
             
             Read-Host "`nPress Enter to continue"
         }
-        "5" {
-            #View audit log
+        "7" {
+#List disabled users (NEW)
+            Clear-Host
+            Write-Host "`n========================================" -ForegroundColor Cyan
+            Write-Host " Disabled Users" -ForegroundColor Cyan
+            Write-Host "========================================" -ForegroundColor Cyan
+            Write-Host ""
+            
+            $disabledUsers = Get-LocalUser | Where-Object {$_.Enabled -eq $false} | Sort-Object Name
+            
+            if ($disabledUsers.Count -eq 0) {
+                Write-Host "No disabled users found" -ForegroundColor Green
+            } else {
+                foreach ($user in $disabledUsers) {
+                    Write-Host "User: $($user.Name)" -ForegroundColor Red
+                    Write-Host "  Full Name: $($user.FullName)" -ForegroundColor Gray
+                    Write-Host "  Description: $($user.Description)" -ForegroundColor Gray
+                    Write-Host "  Last Logon: $($user.LastLogon)" -ForegroundColor Gray
+                    Write-Host ""
+                }
+                
+                Write-Host "Total disabled users: $($disabledUsers.Count)" -ForegroundColor Cyan
+            }
+            
+            Read-Host "`nPress Enter to continue"
+        }
+        "8" {
+#View audit log
             Clear-Host
             Write-Host "`n========================================" -ForegroundColor Cyan
             Write-Host " Audit Log (Last 20 entries)" -ForegroundColor Cyan
