@@ -537,6 +537,11 @@ interactive_menu() {
                 
                 # Expand ~ to home directory
                 csv_path="${csv_path/#\~/$HOME}"
+
+                 # DEBUG: Show after expansion
+                echo "DEBUG: After expansion = '$csv_path'"
+                echo "DEBUG: HOME = '$HOME'"
+                read -p "Press Enter to see if file exists..."
                 
                 import_users_from_csv "$csv_path"
                 
