@@ -441,8 +441,8 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-            3)
-#Disable User
+         3)
+#Disable user
                 clear
                 echo ""
                 echo "========================================"
@@ -450,7 +450,7 @@ interactive_menu() {
                 echo "========================================"
                 echo ""
                 
-#Show Enabled Users
+#Show enabled users
                 echo "Currently enabled users:"
                 while IFS=: read -r username _ uid _ _ _ _; do
                     if [ "$uid" -ge 1000 ] && [ "$uid" -lt 65534 ]; then
@@ -462,7 +462,12 @@ interactive_menu() {
                 done < /etc/passwd
                 echo ""
                 
-                read -p "Enter username to disable: " username
+                read -p "Enter username to disable (or 'back' to return): " username
+                
+#Check if user wants to go back
+                if [[ "$username" == "back" ]] || [[ "$username" == "b" ]]; then
+                    continue
+                fi
                 
                 if [ -z "$username" ]; then
                     print_error "Username is required"
@@ -487,11 +492,16 @@ interactive_menu() {
                 ;;
                 
             4)
-#Enable user 
+#Enable user
                 clear
                 list_disabled_users
                 
-                read -p "Enter username to enable: " username
+                read -p "Enter username to enable (or 'back' to return): " username
+                
+#Check if user wants to go back
+                if [[ "$username" == "back" ]] || [[ "$username" == "b" ]]; then
+                    continue
+                fi
                 
                 if [ -z "$username" ]; then
                     print_error "Username is required"
