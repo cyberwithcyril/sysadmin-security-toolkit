@@ -120,7 +120,95 @@ create_user_account() {
     
     return 0
 }
-
+#*******************************************************************************
+# Function: import_users_from_csv
+#*******************************************************************************
+#Creates multiple users from a CSV file
+#CSV Format: username,full_name,groups
+#Example: jdoe,John Doe,developers,sudo
+import_users_from_csv() {
+    local csv_path="$1"
+    
+    echo ""
+    print_info "Importing users from CSV"
+    echo "----------------------------------------"
+    
+#Check if file exists
+    if [ ! -f "$csv_path" ]; then
+        print_error "CSV file not found: $csv_path"
+        return 1
+    fi
+    
+ #Check if file is readable
+    if [ ! -r "$csv_path" ]; then
+        print_error "Cannot read CSV file: $csv_path"
+        return 1
+    fi
+    
+#Count total users (excluding header)
+    local total_users=$(tail -n +2 "$csv_path" | grep -v '^[[:space:]]*$' | wc -l)
+    
+    if [ "$total_users" -eq 0 ]; then
+        print_error "CSV file is empty or contains only header"
+        return 1
+    fi
+    
+    echo "Found $total_users users to create"
+    echo ""
+    
+    local success_count=0
+    local fail_count=0
+    local line_number=1
+    
+#Read CSV file (skip header line)
+    while IFS=',' read -r username fullname groups; do
+#Skip header line
+        if [ "$line_number" -eq 1 ]; then
+            line_number=$((line_number + 1))
+            continue
+        fi
+        
+#Trim whitespace
+        username=$(echo "$username" | xargs)
+        fullname=$(echo "$fullname" | xargs)
+        groups=$(echo "$groups" | xargs)
+        
+#Skip empty lines
+        if [ -z "$username" ]; then
+            line_number=$((line_number + 1))
+            continue
+        fi
+        
+        echo "Processing: $username ($fullname)"
+        
+#Validate and create user
+        if validate_username "$username"; then
+            if create_user_account "$username" "$fullname" "$groups"; then
+                success_count=$((success_count + 1))
+            else
+                fail_count=$((fail_count + 1))
+            fi
+        else
+            fail_count=$((fail_count + 1))
+        fi
+        
+        line_number=$((line_number + 1))
+        echo ""
+    done < "$csv_path"
+    
+#Import Summary
+    echo "========================================"
+    echo " Import Summary"
+    echo "========================================"
+    echo "Total users processed: $total_users"
+    echo -e "${GREEN}Successfully created: $success_count${NC}"
+    echo -e "${RED}Failed: $fail_count${NC}"
+    echo ""
+    
+    log_action "BULK_USER_CREATE" "SUCCESS" "total=$total_users success=$success_count failed=$fail_count"
+    
+    return 0
+}
 #*******************************************************************************
 # Function: Disable User Account
 #*******************************************************************************
@@ -374,22 +462,23 @@ interactive_menu() {
         echo ""
         echo "USER CREATION:"
         echo "  1. Create single user"
-        echo "  2. Create user with custom groups"
+        echo "  2. Create users from CSV"
+        echo "  3. Create user with custom groups"
         echo ""
         echo "USER MANAGEMENT:"
-        echo "  3. Disable user account"
-        echo "  4. Enable user account"
+        echo "  4. Disable user account"
+        echo "  5. Enable user account"
         echo ""
         echo "INFORMATION:"
-        echo "  5. List all users"
-        echo "  6. List disabled users"
-        echo "  7. View audit log"
+        echo "  6. List all users"
+        echo "  7. List disabled users"
+        echo "  8. View audit log"
         echo ""
         echo "  0. Exit to main menu"
         echo ""
         read -p "Select an option: " choice
         
-        case $choice in
+       case $choice in
             1)
 #Create single user
                 clear
@@ -416,6 +505,45 @@ interactive_menu() {
                 ;;
                 
             2)
+#Create users from CSV
+                clear
+                echo ""
+                echo "========================================"
+                echo " Create Users from CSV"
+                echo "========================================"
+                echo ""
+                echo "CSV Format Required:"
+                echo "  username,full_name,groups"
+                echo ""
+                echo "Example:"
+                echo "  username,full_name,groups"
+                echo "  jdoe,John Doe,developers,sudo"
+                echo "  jsmith,Jane Smith,users"
+                echo "  bob,Bob Wilson,developers"
+                echo ""
+                
+                read -p "Enter CSV file path (or 'back' to return): " csv_path
+                
+                # Check if user wants to go back
+                if [[ "$csv_path" == "back" ]] || [[ "$csv_path" == "b" ]]; then
+                    continue
+                fi
+                
+                if [ -z "$csv_path" ]; then
+                    print_error "CSV file path is required"
+                    read -p "Press Enter to continue..."
+                    continue
+                fi
+                
+                # Expand ~ to home directory
+                csv_path="${csv_path/#\~/$HOME}"
+                
+                import_users_from_csv "$csv_path"
+                
+                read -p "Press Enter to continue..."
+                ;;
+                
+            3)
 #Create user with custom groups
                 clear
                 echo ""
@@ -441,7 +569,7 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-         3)
+            4)
 #Disable user
                 clear
                 echo ""
@@ -491,7 +619,7 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-            4)
+            5)
 #Enable user
                 clear
                 list_disabled_users
@@ -519,7 +647,7 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-            5)
+            6)
 #List all users
                 clear
                 echo ""
@@ -562,14 +690,14 @@ interactive_menu() {
                 read -p "Press Enter to continue..."
                 ;;
                 
-            6)
-#List disabled users (NEW)
+            7)
+#List disabled users
                 clear
                 list_disabled_users
                 read -p "Press Enter to continue..."
                 ;;
                 
-            7)
+            8)
 #View audit log
                 clear
                 echo ""
@@ -600,7 +728,6 @@ interactive_menu() {
         esac
     done
 }
-
 #*******************************************************************************
 # Main - Controller
 #*******************************************************************************
