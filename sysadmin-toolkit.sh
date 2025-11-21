@@ -191,10 +191,6 @@ run_linux_user_management() {
     #Launch interactive menu with all features
     #Script contains its own menu - no arguments = interactive mode
     sudo "$LINUX_BIN/create_user.sh"
-    
-    #Pause after script exits to allow user to see any final messages
-    echo ""
-    read -p "Press Enter to return to main menu..."
 }
 
 #Launches Linux Backup script
@@ -244,7 +240,6 @@ run_linux_service_management() {
     cd "$SCRIPT_DIR"
     sudo "$LINUX_BIN/manage_service.sh"
 }
-
 #*******************************************************************************
 # Windows Tool Functions
 #*******************************************************************************
