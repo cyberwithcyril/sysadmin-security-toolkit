@@ -188,9 +188,13 @@ run_linux_user_management() {
     echo "Launching User Management Menu..."
     echo "(Includes: Create, Enable, Disable, List Users)"
     echo ""
-#Launch interactive menu with all features
-#Script contains its own menu - no arguments = interactive mode
+    #Launch interactive menu with all features
+    #Script contains its own menu - no arguments = interactive mode
     sudo "$LINUX_BIN/create_user.sh"
+    
+    #Pause after script exits to allow user to see any final messages
+    echo ""
+    read -p "Press Enter to return to main menu..."
 }
 
 #Launches Linux Backup script
