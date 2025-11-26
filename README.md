@@ -6,11 +6,6 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)
 
-## 🎯 Overview
-
-The SysAdmin Toolkit is an automation suite I built for managing both Linux and Windows systems. It includes 10 essential tools, all organized under one easy-to-use, cross-platform launcher to help streamline system administration tasks.
-
-
 ## 📋 Table of Contents
 
 - [Project Overview](#-project-overview)
@@ -146,7 +141,6 @@ User Input (CSV or CLI)
 
 **Phase 1: Planning**
 - Identified common sysadmin pain points through research
-- Reviewed security frameworks (CIS Benchmarks, NIST)
 - Prioritized portability and security-first design
 
 **Phase 2: Core Development**
@@ -202,11 +196,12 @@ Automation (Toolkit):
 
 ### Screenshots & Evidence
 
-**[Screenshot Area 1: Universal Launcher Menu]**
-*Add screenshot showing the main menu with OS detection and tool options*
+**Universal Launcher Menu**
+<img width="816" height="730" alt="image" src="https://github.com/user-attachments/assets/fd7d3452-937d-40fb-b6dd-3b31cb8ad9d8" />
 
-**[Screenshot Area 2: User Creation Success]**
-*Add screenshot of successful user creation with generated password and confirmation*
+**User Creation**
+<img width="869" height="705" alt="image" src="https://github.com/user-attachments/assets/704bc132-dffd-403d-83b1-ef7096d7930c" />
+
 
 **[Screenshot Area 3: System Monitoring Alert]**
 *Add screenshot of system monitor detecting high CPU usage and displaying alert*
