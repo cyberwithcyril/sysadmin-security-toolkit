@@ -172,11 +172,13 @@ function New-CompressedBackup {
        
         Write-Host "[INFO] Compressing files (this may take a while)..." -ForegroundColor Yellow
 #Creates Backup - Compress-Archive - PS Command to Create zip files 
-        Compress-Archive -Path $Source -DestinationPath $BackupPath -CompressionLevel Optimal -Force
+        Compress-Archive -Path "$Source\*" -DestinationPath $BackupPath -CompressionLevel Optimal -Force
 
        
         Write-Host "[SUCCESS] Backup created successfully" -ForegroundColor Green
         
+     $fileCount = (Get-ChildItem -Path $Source -Recurse -File -ErrorAction SilentlyContinue).Count
+        Write-Host "[SUCCESS] Files backed up: $fileCount" -ForegroundColor Green       
 #Get backup size
 
 #Get info about the zip file in bytes
