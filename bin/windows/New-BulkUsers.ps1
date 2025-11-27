@@ -309,7 +309,7 @@ catch{
 #Function: Enable-LocalUserAccount
 #*************************************************************************************
 
-fucntion Enable-LocalUserAccount {
+function Enable-LocalUserAccount {
     param(
         [Parameter(Mandatory=$true)]
         [string]$Username
@@ -335,7 +335,7 @@ fucntion Enable-LocalUserAccount {
 if($user.Enabled){
     Write-Host "[INFO] User '$Username' is already enabled" -ForegroundColor Green
     Get-LocalUser -Name $Username | Select-Object Name, Enabled, Description, LastLogon | Format-List
-    $return $true
+    return $true
 }
 try{
     #Enable User Account
@@ -402,7 +402,7 @@ while ($true) {
     Write-Host ""
     Write-Host "USER MANAGEMENT:" -ForegroundColor Yellow
     Write-Host "4. Disable user account" -ForegroundColor White
-    Write-Host "5. Enable user account" -ForegroundColore White
+    Write-Host "5. Enable user account" -ForegroundColor White
     Write-Host ""
     Write-Host "INFORMATION:" -ForegroundColor Yellow
     Write-Host "6. List all local users" -ForegroundColor White
