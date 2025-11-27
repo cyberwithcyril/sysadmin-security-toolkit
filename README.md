@@ -154,9 +154,9 @@ User Input (CSV or CLI)
 - Built menu-driven interface
 
 **Phase 4: Testing**
-- Unit testing with valid/invalid inputs
-- Security testing (password strength, input sanitization)
-- Fresh VM deployment validation
+- Used Faker library to generate realistic user data for bulk creation testing (50+ users with randomized names, departments, roles)
+- Created dummy files and directories to simulate production backup scenarios (161 MB test dataset with 112 files)
+- Structured test data to reflect real-world usage patterns (nested directories, various file types, mixed file sizes)
 
 **Phase 5: Documentation**
 - Comprehensive README and inline comments
