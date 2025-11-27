@@ -178,9 +178,16 @@ function New-CompressedBackup {
         Write-Host "[SUCCESS] Backup created successfully" -ForegroundColor Green
         
      $fileCount = (Get-ChildItem -Path $Source -Recurse -File -ErrorAction SilentlyContinue).Count
-        Write-Host "[SUCCESS] Files backed up: $fileCount" -ForegroundColor Green       
-#Get backup size
+  
+      Write-Host "[SUCCESS] Files backed up: $fileCount" -ForegroundColor Green       
 
+
+if (-not (Test-Path $BackupPath)) {
+    Write-Host "[WARNING] No files to backup - backup file not created" -ForegroundColor Yellow
+    Write-AuditLog -Action "BACKUP_CREATE" -Result "FAILURE" -Details "source=$Source error=empty_source"
+    return $false
+}
+#Get backup size
 #Get info about the zip file in bytes
         $BackupSize = (Get-Item $BackupPath).Length / 1MB
 #Calculate space saved
