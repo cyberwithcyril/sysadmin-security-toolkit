@@ -71,16 +71,19 @@ function Get-FolderSize {
 #Calculates Total Size - Gets all files and folders in the path, includes subdirectories
 #-Property Length = file size and sums it all up   
     if (Test-Path $Path) {
-        $files = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue
+        $totalSize = 0
+        $files = Get-ChildItem -Path "$Path\*" -Recurse -File -ErrorAction SilentlyContinue
         
-        if ($files) {
-            $size = ($files | Measure-Object -Property Length -Sum).Sum
-            if ($size) {
-                return [math]::Round($size / 1MB, 2)
-            }
+        foreach ($file in $files) {
+            $totalSize += $file.Length
+        }
+        
+        if ($totalSize -gt 0) {
+            return [math]::Round($totalSize / 1KB, 2)  # Return KB instead of MB for small files
         }
     }
     return 0
+
 }
 
 #*******************************************************************************
