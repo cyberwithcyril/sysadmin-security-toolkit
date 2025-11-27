@@ -196,29 +196,35 @@ Automation (Toolkit):
 
 ### Screenshots & Evidence
 
-**Universal Launcher Menu**
-<img width="816" height="730" alt="image" src="https://github.com/user-attachments/assets/fd7d3452-937d-40fb-b6dd-3b31cb8ad9d8" />
+#### Universal Launcher Menu
 
-**User Creation**
-<img width="869" height="705" alt="image" src="https://github.com/user-attachments/assets/704bc132-dffd-403d-83b1-ef7096d7930c" />
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/285035ea-4482-41d2-b426-958e16248309" /><img width="400" height="382" alt="image" src="https://github.com/user-attachments/assets/07c034a6-ca96-4e7e-ba22-201760ae1655" />
+
+#### User Creation
+<img width="400" height="286" alt="image" src="https://github.com/user-attachments/assets/271a6653-2b68-440d-aaa5-4a1077babfe1" /><img width="400" height="900" alt="image" src="https://github.com/user-attachments/assets/02e04f06-06e1-4551-b1e2-cef4463776ab" />
+
+#### System Monitoring
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/6c389234-eb8f-4da6-bd90-3ee9847fda4c" /><img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/d46d3401-4a7d-47e2-bef0-807fb86a1b33" />
+
+#### Backup Operations
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/9744dbe2-9726-4cee-9594-07b9fe919013" /><img width="400" height="380" alt="image" src="https://github.com/user-attachments/assets/b433a726-94a2-42cb-9ff7-86ae5a9a95de" />
 
 
-**[Screenshot Area 3: System Monitoring Alert]**
-*Add screenshot of system monitor detecting high CPU usage and displaying alert*
+#### Audit Log
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/98e4eddc-9691-44ad-8338-1de8532ca047" /><img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/97956c7f-fdd1-4bbb-9ba2-484b52d8edb8" />
 
-**[Screenshot Area 4: Backup Operation]**
-*Add screenshot showing backup progress and compression statistics*
+#### Service Management
 
-**[Screenshot Area 5: Audit Log Output]**
-*Add screenshot of audit log file showing timestamped actions*
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b2ad13a5-a0a6-491c-a6c0-37391287fc32" /><img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/ea5a87a0-33e0-4c9b-ad95-b58887077675" />
 
 ### Compression & Storage Efficiency
 
-**Test: 15GB /home directory backup**
-- Original size: 15.0 GB
-- Compressed size: 1.16 GB
-- Compression ratio: 92.3%
-- Storage savings: ~14GB per backup
+**Test: C:\TestBackup directory backup**
+- Original size: 161.45 MB
+- Compressed size: 57.51 KB
+- Compression ratio: 99.96%
+- Files backed up: 112 files
+- Storage savings: ~161 MB per backup
 
 ---
 
@@ -227,22 +233,22 @@ Automation (Toolkit):
 ### Summary
 
 This project successfully delivers a production-ready automation toolkit that:
-- **Eliminates manual errors** through consistent, automated processes
-- **Enforces security policies** (strong passwords, expiration, audit trails)
-- **Provides cross-platform support** via unified launcher
-- **Generates compliance-ready logs** for forensic investigation
+- **Eliminates manual errors** through Consistent, Automated Processes
+- **Enforces security policies** (Strong Passwords, Expiration, Audit Trails)
+- **Provides cross-platform support** via Unified Launcher
+- **Generates compliance-ready logs** for Forensic Investigation
 
 ### Lessons Learned
 
 **Technical:**
-- Cross-platform development requires strategic abstraction and OS detection
-- Error handling must be comprehensive—validate inputs before execution
-- Security controls must be built-in from the start (passwords, permissions, logging)
-- Git Bash enables true cross-platform Bash scripts on Windows
+- Cross-platform tools require careful planning, including OS detection and platform-specific modules.
+- Strong error handling and clear messages are essential for reliability.
+- Security must be built in from the start—password strength, least privilege, and audit logging are non-negotiable.
+- Git Bash provides an easy way to run Bash scripts on Windows without WSL.
 
 **Operational:**
-- Automation consistency eliminates configuration drift
-- Audit logging is essential for compliance and forensics
+- Automated configuration management reduces human error and keeps systems consistent.
+- Detailed audit logs support compliance and forensic investigations.
 - User-friendly interfaces (help messages, color output) drive adoption
 
 ### Next Steps
