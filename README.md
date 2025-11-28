@@ -10,7 +10,7 @@
 
 - [Project Overview](#project-overview)
 - [Project Relevance](#project-relevance)
-- [Methodology](#3-methodology)
+- [Methodology](#methodology)
 - [Results](#results)
 - [Conclusion](#conclusion)
 - [Quick Start](#quick-start)
