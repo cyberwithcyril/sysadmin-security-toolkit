@@ -210,6 +210,14 @@ show_system_info() {
     echo "  Kernel: $(uname -r)"
 #Retrieves Runtime
     echo "  Uptime: $(uptime -p)"
+# Memory info
+echo -e "\nℹ Memory Information:"
+free -h | grep Mem | awk '{print "  Total RAM: "$2"\n  Used: "$3" ("int($3/$2*100)"%)\n  Available: "$7}'
+
+# Network info
+echo -e "\nℹ Network Configuration:"
+hostname -I | awk '{print "  IP Address: "$1}'
+ip route | grep default | awk '{print "  Gateway: "$3}'
 }
 
 #******************************************************************************
