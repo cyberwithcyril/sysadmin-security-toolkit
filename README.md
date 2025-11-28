@@ -8,15 +8,16 @@
 
 ## 📋 Table of Contents
 
-- [Project Overview](#1-project-overview)
-- [Project Relevance](#2-project-relevance)  
+- [Project Overview](#project-overview)
+- [Project Relevance](#project-relevance)
 - [Methodology](#3-methodology)
-- [Results](#4-results)
-- [Conclusion](#5-conclusion)
+- [Results](#results)
+- [Conclusion](#conclusion)
 - [Quick Start](#quick-start)
 - [Author](#author)
 ---
 
+<a name="project-overview"></a>
 ## 🎯 1. Project Overview
 
 ### Summary
