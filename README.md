@@ -60,7 +60,7 @@ The toolkit includes 10 essential tools organized under one unified, cross-platf
 - Single launcher script with automatic OS detection
 
 ---
-
+<a name="project-relevance"></a>
 ## 🔍 2. Project Relevance
 
 ### Why This Matters in Cybersecurity & Forensics
@@ -84,6 +84,7 @@ Manual system administration is prone to errors—weak passwords, forgotten acco
 - Log aggregation for SIEM integration
 
 ---
+<a name="methodology"></a>
 ## ⚙️ 3. Methodology
 
 ### Development Environment
@@ -163,6 +164,7 @@ User Input (CSV or CLI)
 - Usage examples and help messages
 
 ---
+<a name="results"></a>
 ## 📊 Results
 
 ### Functional Verification
@@ -227,7 +229,7 @@ Automation (Toolkit):
 - Storage savings: ~161 MB per backup
 
 ---
-
+<a name="conclusion"></a>
 ## 🎓 Conclusion
 
 ### Summary
@@ -258,7 +260,7 @@ This project successfully delivers a production-ready automation toolkit that:
 3. **Compliance Automation** - Add CIS Benchmark scanning and STIG remediation scripts
 
 ---
-
+<a name="quick-start"></a>
 ## 🚀 Quick Start
 
 ### On Linux:
