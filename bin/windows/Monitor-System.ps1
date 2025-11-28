@@ -260,11 +260,64 @@ function Get-SystemInfo {
     $Uptime = (Get-Date) - $OS.LastBootUpTime
     $UptimeString = "{0} days, {1} hours, {2} minutes" -f $Uptime.Days, $Uptime.Hours, $Uptime.Minutes
 
-#Displays System Information    
-    Write-Host "  Computer: $($Computer.Name)" -ForegroundColor White
-    Write-Host "  OS: $($OS.Caption) $($OS.Version)" -ForegroundColor White
+# Display System Information    
+    Write-Host "`n[SYSTEM]" -ForegroundColor Yellow
+    Write-Host "  Hostname: $($Computer.Name)" -ForegroundColor White
+    Write-Host "  Domain: $($Computer.Domain)" -ForegroundColor White
+    Write-Host "  Manufacturer: $($Computer.Manufacturer)" -ForegroundColor White
+    Write-Host "  Model: $($Computer.Model)" -ForegroundColor White
+    
+    Write-Host "`n[OPERATING SYSTEM]" -ForegroundColor Yellow
+    Write-Host "  OS: $($OS.Caption)" -ForegroundColor White
+    Write-Host "  Version: $($OS.Version)" -ForegroundColor White
+    Write-Host "  Build: $($OS.BuildNumber)" -ForegroundColor White
     Write-Host "  Architecture: $($OS.OSArchitecture)" -ForegroundColor White
+    Write-Host "  Install Date: $($OS.InstallDate.ToString('yyyy-MM-dd'))" -ForegroundColor White
     Write-Host "  Uptime: $UptimeString" -ForegroundColor White
+    
+    Write-Host "`n[PROCESSOR]" -ForegroundColor Yellow
+    Write-Host "  CPU: $($Processor.Name)" -ForegroundColor White
+    Write-Host "  Cores: $($Processor.NumberOfCores)" -ForegroundColor White
+    Write-Host "  Logical Processors: $($Processor.NumberOfLogicalProcessors)" -ForegroundColor White
+    
+    Write-Host "`n[MEMORY]" -ForegroundColor Yellow
+    $TotalRAM = [math]::Round($Computer.TotalPhysicalMemory / 1GB, 2)
+    $FreeRAM = [math]::Round($OS.FreePhysicalMemory / 1MB / 1024, 2)
+    $UsedRAM = [math]::Round($TotalRAM - $FreeRAM, 2)
+    $RAMPercent = [math]::Round(($UsedRAM / $TotalRAM) * 100, 1)
+    
+    Write-Host "  Total RAM: $TotalRAM GB" -ForegroundColor White
+    Write-Host "  Used RAM: $UsedRAM GB ($RAMPercent%)" -ForegroundColor White
+    Write-Host "  Free RAM: $FreeRAM GB" -ForegroundColor White
+    
+    Write-Host "`n[DISK]" -ForegroundColor Yellow
+    $Drives = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DriveType -eq 3 }
+    foreach ($Drive in $Drives) {
+        $Size = [math]::Round($Drive.Size / 1GB, 2)
+        $Free = [math]::Round($Drive.FreeSpace / 1GB, 2)
+        $Used = $Size - $Free
+        $Percent = [math]::Round(($Used / $Size) * 100, 1)
+        
+        Write-Host "  Drive $($Drive.DeviceID) - $Percent% used ($Used GB / $Size GB)" -ForegroundColor White
+    }
+    
+    Write-Host "`n[NETWORK]" -ForegroundColor Yellow
+    $Network = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { 
+        $_.InterfaceAlias -notlike "*Loopback*" -and $_.IPAddress -ne "127.0.0.1" 
+    } | Select-Object -First 1
+    
+    if ($Network) {
+        Write-Host "  IP Address: $($Network.IPAddress)" -ForegroundColor White
+        Write-Host "  Interface: $($Network.InterfaceAlias)" -ForegroundColor White
+        
+        # Get Gateway
+        $Gateway = Get-NetRoute -DestinationPrefix "0.0.0.0/0" | Select-Object -First 1
+        if ($Gateway) {
+            Write-Host "  Gateway: $($Gateway.NextHop)" -ForegroundColor White
+        }
+    }
+    
+    Write-Host ""
 }
 
 #********************************************************************************
