@@ -3,12 +3,13 @@
     Windows Event Log management and archival
 .DESCRIPTION
     Manages Windows Event Logs - Archives, Clears, & Analyzes
+    Also provides general log rotation and archival for application logs
 .AUTHOR
     Cyril Thomas
 .DATE
     November 5, 2025
 .VERSION
-    1.0
+    2.0
 **************************************************************************************#>
 
 #Requires -RunAsAdministrator
@@ -19,6 +20,12 @@ $RetentionDays = 30
 $MaxLogSizeMB = 100 #Alert Threshold for max log size
 $AuditLog = "C:\Logs\SysAdminToolkit\audit.log"
 $LogDir = "C:\Logs\SysAdminToolkit"
+
+# Log Rotation Configuration
+$LogRotationPath = "C:\Logs\Applications"  # Directory to monitor for application logs
+$LogArchivePath = "C:\Logs\LogArchives"    # Where to store compressed log archives
+$MaxLogFileSizeMB = 50                     # Size threshold for rotation
+$LogRetentionDays = 30                     # How long to keep archived logs
 
 #*******************************************************************************
 # Function: Write-AuditLog
@@ -96,7 +103,7 @@ function Get-EventLogInfo {
 }
 
 #*******************************************************************************
-# Function: Export-EventLogArchive
+# Function: Export- Event Log Archive
 #*******************************************************************************
 #Creates a backup copy of a Windows event log
 function Export-EventLogArchive {
@@ -147,7 +154,7 @@ function Export-EventLogArchive {
 }
 
 #*******************************************************************************
-# Function: Clear-EventLogSafe
+# Function: Clear-Event Log Safe
 #*******************************************************************************
 #Safely Clears a Windows Event Log
 
@@ -199,7 +206,7 @@ function Clear-EventLogSafe {
 }
 
 #*******************************************************************************
-# Function: Get-EventLogSummary
+# Function: Get-Event Log Summary
 #*******************************************************************************
 #Analyzes Recent Events in a Log & Shows Statistics
 
@@ -255,7 +262,7 @@ function Get-EventLogSummary {
 }
 
 #******************************************************************************
-# Function: Remove-OldArchives
+# Function: Remove-Old Archives
 #******************************************************************************
 #Deletes Archived Event Logs Older Than Retention Period
 
@@ -315,6 +322,248 @@ function Remove-OldArchives {
 }
 
 #******************************************************************************
+# Get-Log Rotation Status
+#******************************************************************************
+# Displays status of application logs in the monitored directory
+
+function Get-LogRotationStatus {
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host " Application Log Status" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "[INFO] Monitoring: $LogRotationPath" -ForegroundColor Cyan
+    
+# Check if directory exists
+    if (-not (Test-Path $LogRotationPath)) {
+        Write-Host "[WARNING] Log directory not found" -ForegroundColor Yellow
+        Write-Host "[INFO] Creating directory: $LogRotationPath" -ForegroundColor Cyan
+        New-Item -ItemType Directory -Path $LogRotationPath -Force | Out-Null
+        Write-Host "[SUCCESS] Directory created" -ForegroundColor Green
+        return
+    }
+    
+#Get all .log files
+    $LogFiles = Get-ChildItem -Path $LogRotationPath -Filter "*.log" -Recurse
+    
+    if ($LogFiles.Count -eq 0) {
+        Write-Host "[INFO] No log files found" -ForegroundColor Yellow
+        return
+    }
+    
+    Write-Host "`nFound $($LogFiles.Count) log file(s):" -ForegroundColor White
+    Write-Host ""
+    
+    $TotalSizeMB = 0
+    $NeedsRotation = 0
+    
+    foreach ($LogFile in $LogFiles) {
+        $SizeMB = [math]::Round($LogFile.Length / 1MB, 2)
+        $TotalSizeMB += $SizeMB
+        $Age = (Get-Date) - $LogFile.LastWriteTime
+        
+        Write-Host "File: $($LogFile.Name)" -ForegroundColor Yellow
+        Write-Host "  Path: $($LogFile.DirectoryName)" -ForegroundColor Gray
+        Write-Host "  Size: $SizeMB MB" -ForegroundColor White
+        Write-Host "  Last Modified: $($LogFile.LastWriteTime)" -ForegroundColor White
+        Write-Host "  Age: $($Age.Days) days" -ForegroundColor White
+        
+#Check if needs rotation
+        if ($SizeMB -gt $MaxLogFileSizeMB) {
+            Write-Host "  [WARNING] Exceeds size limit ($MaxLogFileSizeMB MB) - needs rotation!" -ForegroundColor Red
+            $NeedsRotation++
+        }
+        Write-Host ""
+    }
+    
+    Write-Host "Summary:" -ForegroundColor Cyan
+    Write-Host "  Total Size: $TotalSizeMB MB" -ForegroundColor White
+    Write-Host "  Files Needing Rotation: $NeedsRotation" -ForegroundColor $(if ($NeedsRotation -gt 0) { "Red" } else { "Green" })
+}
+
+#******************************************************************************
+#FUNCTION: Invoke-LogRotation
+#******************************************************************************
+#Rotates and compresses log files that exceed size threshold
+
+function Invoke-LogRotation {
+    param(
+        [string]$LogPath = $LogRotationPath,
+        [string]$ArchivePath = $LogArchivePath,
+        [int]$MaxSizeMB = $MaxLogFileSizeMB
+    )
+    
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host " Log Rotation" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    
+#Create archive directory if it doesn't exist
+    if (-not (Test-Path $ArchivePath)) {
+        Write-Host "[INFO] Creating archive directory: $ArchivePath" -ForegroundColor Cyan
+        New-Item -ItemType Directory -Path $ArchivePath -Force | Out-Null
+    }
+    
+#Check if log directory exists
+    if (-not (Test-Path $LogPath)) {
+        Write-Host "[ERROR] Log directory not found: $LogPath" -ForegroundColor Red
+        return
+    }
+    
+#Get all .log files
+    $LogFiles = Get-ChildItem -Path $LogPath -Filter "*.log" -Recurse
+    
+    if ($LogFiles.Count -eq 0) {
+        Write-Host "[INFO] No log files found to rotate" -ForegroundColor Yellow
+        return
+    }
+    
+    $RotatedCount = 0
+    $TotalCompressedSizeMB = 0
+    
+    foreach ($LogFile in $LogFiles) {
+        $SizeMB = [math]::Round($LogFile.Length / 1MB, 2)
+        
+#Check if file needs rotation
+        if ($SizeMB -gt $MaxSizeMB) {
+            Write-Host "`n[INFO] Rotating: $($LogFile.Name) ($SizeMB MB)" -ForegroundColor Cyan
+            
+            try {
+#Generate archive filename with timestamp
+                $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+                $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($LogFile.Name)
+                $ArchiveFileName = "${BaseName}_${Timestamp}.zip"
+                $ArchiveFilePath = Join-Path $ArchivePath $ArchiveFileName
+                
+#Compress the log file
+                Write-Host "[INFO] Compressing log file..." -ForegroundColor Cyan
+                Compress-Archive -Path $LogFile.FullName -DestinationPath $ArchiveFilePath -Force
+                
+                if (Test-Path $ArchiveFilePath) {
+                    $CompressedSizeMB = [math]::Round((Get-Item $ArchiveFilePath).Length / 1MB, 2)
+                    $CompressionRatio = [math]::Round((1 - ($CompressedSizeMB / $SizeMB)) * 100, 1)
+                    
+                    Write-Host "[SUCCESS] Compressed: $ArchiveFileName" -ForegroundColor Green
+                    Write-Host "  Original Size: $SizeMB MB" -ForegroundColor White
+                    Write-Host "  Compressed Size: $CompressedSizeMB MB" -ForegroundColor White
+                    Write-Host "  Compression Ratio: $CompressionRatio%" -ForegroundColor White
+                    
+#Clear the original log file (keep it but empty it)
+                    Clear-Content -Path $LogFile.FullName -Force
+                    Write-Host "[SUCCESS] Original log file cleared" -ForegroundColor Green
+                    
+                    $RotatedCount++
+                    $TotalCompressedSizeMB += $CompressedSizeMB
+                    
+ #Log the action
+                    Write-AuditLog -Action "LOG_ROTATION" -Result "SUCCESS" -Details "file=$($LogFile.Name) original_size=${SizeMB}MB compressed_size=${CompressedSizeMB}MB ratio=${CompressionRatio}%"
+                }
+                else {
+                    Write-Host "[ERROR] Failed to create compressed archive" -ForegroundColor Red
+                }
+            }
+            catch {
+                Write-Host "[ERROR] Failed to rotate log: $_" -ForegroundColor Red
+                Write-AuditLog -Action "LOG_ROTATION" -Result "FAILURE" -Details "file=$($LogFile.Name) error=$($_.Exception.Message)"
+            }
+        }
+        else {
+            Write-Host "[INFO] $($LogFile.Name) - Size OK ($SizeMB MB / $MaxSizeMB MB)" -ForegroundColor Green
+        }
+    }
+    
+    if ($RotatedCount -gt 0) {
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "[SUCCESS] Rotated $RotatedCount log file(s)" -ForegroundColor Green
+        Write-Host "[INFO] Total compressed size: $TotalCompressedSizeMB MB" -ForegroundColor Cyan
+        Write-Host "[INFO] Archives stored in: $ArchivePath" -ForegroundColor Cyan
+    }
+    else {
+        Write-Host "`n[INFO] No log files needed rotation" -ForegroundColor Yellow
+    }
+}
+
+#******************************************************************************
+#FUNCTION: Remove-Old Log Archives
+#******************************************************************************
+#Removes compressed log archives older than retention period
+
+function Remove-OldLogArchives {
+    param(
+        [string]$ArchivePath = $LogArchivePath,
+        [int]$RetentionDays = $LogRetentionDays
+    )
+    
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host " Removing Old Log Archives" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    Write-Host "[INFO] Retention: $RetentionDays days" -ForegroundColor Cyan
+    
+#Check if archive directory exists
+    if (-not (Test-Path $ArchivePath)) {
+        Write-Host "[INFO] No archive directory found" -ForegroundColor Yellow
+        return
+    }
+    
+#Calculate cutoff date
+    $CutoffDate = (Get-Date).AddDays(-$RetentionDays)
+    
+#Find old archives
+    $OldArchives = Get-ChildItem -Path $ArchivePath -Filter "*.zip" | 
+                   Where-Object { $_.LastWriteTime -lt $CutoffDate }
+    
+    if ($OldArchives.Count -eq 0) {
+        Write-Host "[INFO] No old archives to delete" -ForegroundColor Yellow
+        return
+    }
+    
+    $DeletedCount = 0
+    $TotalSizeMB = 0
+    
+    foreach ($Archive in $OldArchives) {
+        try {
+            $SizeMB = [math]::Round($Archive.Length / 1MB, 2)
+            $Age = (Get-Date) - $Archive.LastWriteTime
+            
+            Remove-Item $Archive.FullName -Force
+            Write-Host "[SUCCESS] Deleted: $($Archive.Name) ($SizeMB MB, $($Age.Days) days old)" -ForegroundColor Green
+            
+            $DeletedCount++
+            $TotalSizeMB += $SizeMB
+        }
+        catch {
+            Write-Host "[ERROR] Failed to delete: $($Archive.Name)" -ForegroundColor Red
+        }
+    }
+    
+    Write-Host "`n[SUCCESS] Deleted $DeletedCount archive(s), freed $TotalSizeMB MB" -ForegroundColor Green
+    Write-AuditLog -Action "LOG_ARCHIVE_CLEANUP" -Result "SUCCESS" -Details "deleted=$DeletedCount size_freed=${TotalSizeMB}MB retention=${RetentionDays}d"
+}
+
+#******************************************************************************
+# FUNCTION: Invoke-Full Log Maintenance
+#******************************************************************************
+#Runs complete log maintenance - rotation and cleanup
+
+function Invoke-FullLogMaintenance {
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host " Full Log Maintenance" -ForegroundColor Cyan
+    Write-Host "========================================" -ForegroundColor Cyan
+    
+    #Show current status
+    Get-LogRotationStatus
+    
+    #Rotate logs that need it
+    Write-Host "`n--- Starting Log Rotation ---" -ForegroundColor Yellow
+    Invoke-LogRotation
+    
+    #Clean up old archives
+    Write-Host "`n--- Cleaning Up Old Archives ---" -ForegroundColor Yellow
+    Remove-OldLogArchives
+    
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "[SUCCESS] Maintenance Complete" -ForegroundColor Green
+    Write-Host "========================================" -ForegroundColor Cyan
+}
+
+#******************************************************************************
 # Main Script - Interactive Menu
 #*******************************************************************************
 
@@ -327,20 +576,33 @@ if (-not (Test-Administrator)) {
 # Main menu loop
 while ($true) {
     Write-Host "`n=========================================" -ForegroundColor Cyan
-    Write-Host " Windows Event Log Management v1.0" -ForegroundColor Cyan
+    Write-Host " Windows Log Management v2.0" -ForegroundColor Cyan
     Write-Host "=========================================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Configuration:" -ForegroundColor Yellow
+    Write-Host "Event Log Configuration:" -ForegroundColor Yellow
     Write-Host "  Archive Path: $ArchivePath" -ForegroundColor White
     Write-Host "  Retention: $RetentionDays days" -ForegroundColor White
     Write-Host "  Max Log Size: $MaxLogSizeMB MB" -ForegroundColor White
     Write-Host ""
+    Write-Host "Log Rotation Configuration:" -ForegroundColor Yellow
+    Write-Host "  Monitor Path: $LogRotationPath" -ForegroundColor White
+    Write-Host "  Archive Path: $LogArchivePath" -ForegroundColor White
+    Write-Host "  Max File Size: $MaxLogFileSizeMB MB" -ForegroundColor White
+    Write-Host "  Retention: $LogRetentionDays days" -ForegroundColor White
+    Write-Host ""
+    Write-Host "--- Windows Event Logs ---" -ForegroundColor Magenta
     Write-Host "1. Show event log status" -ForegroundColor Yellow
     Write-Host "2. View log summary (last 24 hours)" -ForegroundColor Yellow
     Write-Host "3. Archive event log" -ForegroundColor Yellow
     Write-Host "4. Clear event log (with archive)" -ForegroundColor Yellow
     Write-Host "5. Remove old archives" -ForegroundColor Yellow
     Write-Host "6. Run full analysis" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "--- Application Log Rotation ---" -ForegroundColor Magenta
+    Write-Host "7. Show application log status" -ForegroundColor Yellow
+    Write-Host "8. Rotate logs (compress & archive)" -ForegroundColor Yellow
+    Write-Host "9. Remove old log archives" -ForegroundColor Yellow
+    Write-Host "10. Run full log maintenance" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "0. Exit to main menu" -ForegroundColor Red
     Write-Host ""
@@ -349,13 +611,13 @@ while ($true) {
     
     switch ($choice) {
         "1" {
-            #Show current status of all logs
+#Show current status of all logs
             Clear-Host
             Get-EventLogInfo
             Read-Host "`nPress Enter to continue"
         }
         "2" {
-            #View log summary
+#View log summary
             Clear-Host
             Write-Host "`nSelect log:" -ForegroundColor Cyan
             Write-Host "  1. System"
@@ -377,7 +639,7 @@ while ($true) {
             Read-Host "`nPress Enter to continue"
         }
         "3" {
-            #Archive event log
+#Archive event log
             Clear-Host
             Write-Host "`nSelect log to archive:" -ForegroundColor Cyan
             Write-Host "  1. System"
@@ -396,7 +658,7 @@ while ($true) {
             Read-Host "`nPress Enter to continue"
         }
         "4" {
-            #Clear event log with archive
+#Clear event log with archive
             Clear-Host
             Write-Host "`nWARNING: This will clear the event log!" -ForegroundColor Red
             Write-Host "An archive will be created first." -ForegroundColor Yellow
@@ -423,13 +685,13 @@ while ($true) {
             Read-Host "`nPress Enter to continue"
         }
         "5" {
-            #Remove old archives
+#Remove old archives
             Clear-Host
             Remove-OldArchives -ArchivePath $ArchivePath -RetentionDays $RetentionDays
             Read-Host "`nPress Enter to continue"
         }
         "6" {
-            #Run full analysis
+#Run full analysis
             Clear-Host
             Write-Host "`n=========================================" -ForegroundColor Cyan
             Write-Host " Full System Analysis" -ForegroundColor Cyan
@@ -440,6 +702,30 @@ while ($true) {
             Get-EventLogSummary -LogName "Application" -Hours 24
             Remove-OldArchives -ArchivePath $ArchivePath -RetentionDays $RetentionDays
             
+            Read-Host "`nPress Enter to continue"
+        }
+        "7" {
+#Show application log status
+            Clear-Host
+            Get-LogRotationStatus
+            Read-Host "`nPress Enter to continue"
+        }
+        "8" {
+#Rotate logs
+            Clear-Host
+            Invoke-LogRotation
+            Read-Host "`nPress Enter to continue"
+        }
+        "9" {
+#Remove old log archives
+            Clear-Host
+            Remove-OldLogArchives
+            Read-Host "`nPress Enter to continue"
+        }
+        "10" {
+#Run full log maintenance
+            Clear-Host
+            Invoke-FullLogMaintenance
             Read-Host "`nPress Enter to continue"
         }
         "0" {
