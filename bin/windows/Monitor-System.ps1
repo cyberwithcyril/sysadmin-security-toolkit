@@ -364,6 +364,72 @@ function Start-SystemMonitor {
         
     } while ($Continuous)
 }
+#*******************************************************************************
+# Function: View-SystemAuditLogs
+#*******************************************************************************
+# View system audit logs from C:\SystemAudit\AuditLogs\
+
+function View-SystemAuditLogs {
+    $auditDir = "C:\SystemAudit\AuditLogs"
+    
+    if (!(Test-Path $auditDir)) {
+        Write-Host "`n[INFO] No system audit logs found." -ForegroundColor Yellow
+        Write-Host "[INFO] Run the System-AuditLog.ps1 script first to generate audit logs." -ForegroundColor Yellow
+        return
+    }
+    
+    Clear-Host
+    Write-Host "`n=========================================" -ForegroundColor Cyan
+    Write-Host " System Audit Logs" -ForegroundColor Cyan
+    Write-Host "=========================================" -ForegroundColor Cyan
+    
+    Write-Host "`nAvailable Audit Logs:" -ForegroundColor Yellow
+    $logs = Get-ChildItem $auditDir -Filter "*.log" | Sort-Object LastWriteTime -Descending
+    
+    if ($logs.Count -eq 0) {
+        Write-Host "[INFO] No audit log files found in $auditDir" -ForegroundColor Yellow
+        return
+    }
+    
+#Display logs in a numbered list
+    for ($i = 0; $i -lt $logs.Count; $i++) {
+        $log = $logs[$i]
+        $size = [math]::Round($log.Length / 1KB, 2)
+        Write-Host "  $($i+1). $($log.Name) - $($log.LastWriteTime) - $size KB" -ForegroundColor White
+    }
+    
+    Write-Host "`nOptions:" -ForegroundColor Yellow
+    Write-Host "  Enter number to view specific log" -ForegroundColor White
+    Write-Host "  Type 'latest' for most recent log" -ForegroundColor White
+    Write-Host "  Type '0' to return to menu" -ForegroundColor White
+    Write-Host ""
+    
+    $choice = Read-Host "Select option"
+    
+    if ($choice -eq "0") {
+        return
+    }
+    elseif ($choice -eq "latest") {
+        $selectedLog = $logs[0]
+        Clear-Host
+        Write-Host "`n=========================================" -ForegroundColor Cyan
+        Write-Host " Viewing: $($selectedLog.Name)" -ForegroundColor Cyan
+        Write-Host "=========================================" -ForegroundColor Cyan
+        Get-Content $selectedLog.FullName | Out-Host -Paging
+    }
+    elseif ($choice -match '^\d+$' -and [int]$choice -ge 1 -and [int]$choice -le $logs.Count) {
+        $selectedLog = $logs[[int]$choice - 1]
+        Clear-Host
+        Write-Host "`n=========================================" -ForegroundColor Cyan
+        Write-Host " Viewing: $($selectedLog.Name)" -ForegroundColor Cyan
+        Write-Host "=========================================" -ForegroundColor Cyan
+        Get-Content $selectedLog.FullName | Out-Host -Paging
+    }
+    else {
+        Write-Host "`n[ERROR] Invalid selection" -ForegroundColor Red
+        Start-Sleep -Seconds 2
+    }
+}
 
 #*******************************************************************************
 # Main Script - Interactive Menu
@@ -392,6 +458,7 @@ while ($true) {
     Write-Host "2. Start continuous monitoring (60 sec interval)" -ForegroundColor Yellow
     Write-Host "3. View alert log" -ForegroundColor Yellow
     Write-Host "4. View audit log" -ForegroundColor Yellow
+    Write-Host "5. View system audit logs" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "0. Exit to main menu" -ForegroundColor Red
     Write-Host ""
@@ -434,6 +501,10 @@ while ($true) {
             } else {
                 Write-Host "[INFO] No audit entries yet" -ForegroundColor Yellow
             }
+            Read-Host "`nPress Enter to continue"
+        }
+        "5" {
+            View-SystemAuditLogs
             Read-Host "`nPress Enter to continue"
         }
         "0" {
