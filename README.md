@@ -100,29 +100,11 @@ Manual system administration is prone to errors—weak passwords, forgotten acco
 - VirtualBox for VM isolation
 
 ### Architecture
-```
-┌────────────────────────────────────────┐
-│     UNIVERSAL LAUNCHER                 │
-│   (sysadmin-toolkit.sh)                │
-│                                         │
-│  OS Detection (uname -s)               │
-│  • Linux   → /bin/linux/*.sh           │
-│  • Windows → /bin/windows/*.ps1        │
-└──────────────┬─────────────────────────┘
-               │
-       ┌───────┴────────┐
-       │                │
-   Linux Scripts    Windows Scripts
-   (Bash .sh)       (PowerShell .ps1)
-       │                │
-       └────┬───────────┘
-            │
-    ┌───────▼────────┐
-    │ Audit Logging  │
-    │ Linux:  /var/log/sysadmin-toolkit/
-    │ Windows: C:\Logs\SysAdminToolkit/  │
-    └────────────────┘
-```
+
+
+<img width="1109" height="455" alt="image" src="https://github.com/user-attachments/assets/81e1ef1e-5d2e-44aa-810d-029f35e8fbe4" />
+
+
 ### Data Flow Example (User Creation)
 ```
 User Input (CSV or CLI)
@@ -323,7 +305,7 @@ sysadmin-toolkit/
 ```
 
 
-  
+<a name="author"></a>  
 ## 👤 Author
 
 **Cyril Thomas**
