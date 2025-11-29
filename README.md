@@ -195,11 +195,11 @@ Automation (Toolkit):
 
 
 #### Audit Log
-<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/98e4eddc-9691-44ad-8338-1de8532ca047" /><img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/97956c7f-fdd1-4bbb-9ba2-484b52d8edb8" />
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/98e4eddc-9691-44ad-8338-1de8532ca047" /><img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/646d2ce6-25ea-403e-8cab-eb9b1b00fdf6" />
 
 #### Service Management
 
-<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b2ad13a5-a0a6-491c-a6c0-37391287fc32" /><img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/ea5a87a0-33e0-4c9b-ad95-b58887077675" />
+<img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/b2ad13a5-a0a6-491c-a6c0-37391287fc32" /><img width="400" height="400" alt="image" src="https://github.com/user-attachments/assets/ea72f003-c07f-45e8-b481-03f74703aa41" />
 
 ### Compression & Storage Efficiency
 
